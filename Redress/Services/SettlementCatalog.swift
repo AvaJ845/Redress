@@ -11,36 +11,79 @@ private struct SeedSettlementDTO: Codable {
     let administratorName: String
     let administratorPortalURLString: String
     let claimDeadline: String
+    let isSampleData: Bool
+    let sourceName: String
+    let sourceURLString: String?
+    let sourceDate: String?
+}
+
+private struct SeedFile: Codable {
+    let seedVersion: Int
+    let settlements: [SeedSettlementDTO]
 }
 
 enum SettlementCatalog {
-    static func loadSeedIfNeeded(into context: ModelContext) {
-        let descriptor = FetchDescriptor<Settlement>()
-        let existingCount = (try? context.fetchCount(descriptor)) ?? 0
-        guard existingCount == 0 else { return }
+    /// Bumping `seedVersion` in SeedSettlements.json is how new real
+    /// settlements (or corrections to existing ones) reach installs that
+    /// already have data — previously this only ran once ever per
+    /// install, which meant a future app update with real settlements
+    /// would silently do nothing for anyone who'd already launched the
+    /// app. Upserts by id, so it never touches a user's Claims (which
+    /// reference settlementID, not the Settlement object itself).
+    static let appliedSeedVersionKey = "redress.appliedSeedVersion"
 
-        guard let url = Bundle.main.url(forResource: "SeedSettlements", withExtension: "json"),
-              let data = try? Data(contentsOf: url) else { return }
+    static func loadSeedIfNeeded(into context: ModelContext, seedFileURL: URL? = nil) {
+        let url = seedFileURL ?? Bundle.main.url(forResource: "SeedSettlements", withExtension: "json")
+        guard let url, let data = try? Data(contentsOf: url) else { return }
+        guard let seedFile = try? JSONDecoder().decode(SeedFile.self, from: data) else { return }
+
+        let appliedVersion = UserDefaults.standard.integer(forKey: appliedSeedVersionKey)
+        guard seedFile.seedVersion > appliedVersion else { return }
 
         let formatter = ISO8601DateFormatter()
-        guard let dtos = try? JSONDecoder().decode([SeedSettlementDTO].self, from: data) else { return }
+        let existing = (try? context.fetch(FetchDescriptor<Settlement>())) ?? []
+        var existingByID = Dictionary(uniqueKeysWithValues: existing.map { ($0.id, $0) })
 
-        for dto in dtos {
+        for dto in seedFile.settlements {
             let deadline = formatter.date(from: dto.claimDeadline) ?? Date()
-            let settlement = Settlement(
-                id: dto.id,
-                title: dto.title,
-                brand: dto.brand,
-                settlementDescription: dto.description,
-                eligibilityCriteria: dto.eligibilityCriteria,
-                proofRequirement: ProofRequirement(rawValue: dto.proofRequirement) ?? .none,
-                administratorName: dto.administratorName,
-                administratorPortalURLString: dto.administratorPortalURLString,
-                claimDeadline: deadline,
-                isSampleData: true
-            )
-            context.insert(settlement)
+            let sourceDate = dto.sourceDate.flatMap { formatter.date(from: $0) }
+            let proofRequirement = ProofRequirement(rawValue: dto.proofRequirement) ?? .none
+
+            if let record = existingByID[dto.id] {
+                record.title = dto.title
+                record.brand = dto.brand
+                record.settlementDescription = dto.description
+                record.eligibilityCriteria = dto.eligibilityCriteria
+                record.proofRequirement = proofRequirement
+                record.administratorName = dto.administratorName
+                record.administratorPortalURLString = dto.administratorPortalURLString
+                record.claimDeadline = deadline
+                record.sourceName = dto.sourceName
+                record.sourceURLString = dto.sourceURLString
+                record.sourceDate = sourceDate
+                record.isSampleData = dto.isSampleData
+            } else {
+                let settlement = Settlement(
+                    id: dto.id,
+                    title: dto.title,
+                    brand: dto.brand,
+                    settlementDescription: dto.description,
+                    eligibilityCriteria: dto.eligibilityCriteria,
+                    proofRequirement: proofRequirement,
+                    administratorName: dto.administratorName,
+                    administratorPortalURLString: dto.administratorPortalURLString,
+                    claimDeadline: deadline,
+                    isSampleData: dto.isSampleData,
+                    sourceName: dto.sourceName,
+                    sourceURLString: dto.sourceURLString,
+                    sourceDate: sourceDate
+                )
+                context.insert(settlement)
+                existingByID[dto.id] = settlement
+            }
         }
+
         context.saveOrLog()
+        UserDefaults.standard.set(seedFile.seedVersion, forKey: appliedSeedVersionKey)
     }
 }

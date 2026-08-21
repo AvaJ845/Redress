@@ -37,6 +37,12 @@ CLAIMS_CONTENT_PATTERN = re.compile(
     r"\bclaim(s)?\b|\bdeadline\b|\beligib(le|ility)\b|\bsettlement\b", re.IGNORECASE
 )
 
+# Confirmed live 2026-08-21 against a real 403 from comcastbreachsettlement.com.
+BOT_PROTECTION_PATTERN = re.compile(
+    r"Attention Required! \| Cloudflare|cf-browser-verification|Just a moment\.\.\.|"
+    r"cf_chl_opt|__cf_chl_rt_tk", re.IGNORECASE
+)
+
 
 @dataclass
 class FreshnessResult:
@@ -46,14 +52,30 @@ class FreshnessResult:
     status_code: Optional[int] = None
     looks_like_claims_content: Optional[bool] = None
     error: Optional[str] = None
+    blocked_by_bot_protection: bool = False
 
     @property
     def needs_attention(self) -> bool:
-        """True if a human should look at this — either the URL is dead,
-        or it's reachable but no longer looks claims-related at all."""
+        """True if a human should look at this. A bot-protection block
+        (Cloudflare et al.) is deliberately NOT treated the same as a dead
+        link — plenty of legitimate, live claims-administrator sites (Kroll
+        in particular) run Cloudflare and reject plain HTTP requests the
+        same way they'd reject a scraper, even though a real browser gets
+        through fine. Confirmed live 2026-08-21: comcastbreachsettlement.com
+        403s this checker but is genuinely live and current when checked
+        with an actual browser. Flagging it identically to a real 404 would
+        make this tool cry wolf on working links."""
+        if self.blocked_by_bot_protection:
+            return False
         if not self.is_reachable:
             return True
         return self.looks_like_claims_content is False
+
+    @property
+    def needs_manual_verification(self) -> bool:
+        """Distinct from needs_attention: we genuinely don't know the
+        status, not that something looks wrong."""
+        return self.blocked_by_bot_protection
 
 
 def check_url_freshness(url: str, timeout: int = 15) -> FreshnessResult:
@@ -69,8 +91,15 @@ def check_url_freshness(url: str, timeout: int = 15) -> FreshnessResult:
             status_code = response.status
             body = response.read(200_000).decode("utf-8", errors="ignore")
     except urllib.error.HTTPError as exc:
+        error_body = ""
+        try:
+            error_body = exc.read(200_000).decode("utf-8", errors="ignore")
+        except Exception:
+            pass
+        blocked = exc.code == 403 and BOT_PROTECTION_PATTERN.search(error_body) is not None
         return FreshnessResult(url=url, checked_at=checked_at, is_reachable=False,
-                                status_code=exc.code, error=str(exc))
+                                status_code=exc.code, error=str(exc),
+                                blocked_by_bot_protection=blocked)
     except Exception as exc:
         return FreshnessResult(url=url, checked_at=checked_at, is_reachable=False,
                                 error=str(exc))
@@ -86,7 +115,8 @@ def check_url_freshness(url: str, timeout: int = 15) -> FreshnessResult:
 
 def check_seed_file(path: str) -> List[dict]:
     with open(path) as f:
-        settlements = json.load(f)
+        seed_file = json.load(f)
+    settlements = seed_file["settlements"] if isinstance(seed_file, dict) else seed_file
 
     results = []
     for settlement in settlements:
@@ -98,6 +128,7 @@ def check_seed_file(path: str) -> List[dict]:
             "isSampleData": settlement.get("isSampleData", False),
             **asdict(result),
             "needs_attention": result.needs_attention,
+            "needs_manual_verification": result.needs_manual_verification,
         })
     return results
 
@@ -115,17 +146,29 @@ def main() -> int:
 
     results = check_seed_file(seed_path)
     attention_needed = [r for r in results if r["needs_attention"]]
+    manual_check_needed = [r for r in results if r["needs_manual_verification"]]
 
     for r in results:
-        flag = "NEEDS ATTENTION" if r["needs_attention"] else "ok"
+        if r["needs_attention"]:
+            flag = "NEEDS ATTENTION"
+        elif r["needs_manual_verification"]:
+            flag = "BOT-BLOCKED, CHECK MANUALLY"
+        else:
+            flag = "ok"
         print(f"[{flag}] {r['title']} — {r['url']} "
               f"(reachable={r['is_reachable']}, status={r['status_code']})", file=sys.stderr)
+
+    if manual_check_needed:
+        print(f"\n{len(manual_check_needed)} settlement(s) are behind bot protection this "
+              f"checker can't get through (e.g. Cloudflare) — not flagged as broken, but a "
+              f"human should periodically confirm these with a real browser.", file=sys.stderr)
 
     if attention_needed:
         print(f"\n{len(attention_needed)} of {len(results)} settlements need attention.", file=sys.stderr)
         return 1
 
-    print(f"\nAll {len(results)} settlements look fresh.", file=sys.stderr)
+    print(f"\nAll {len(results)} settlements look fresh "
+          f"({len(manual_check_needed)} pending manual bot-protection check).", file=sys.stderr)
     return 0
 
 

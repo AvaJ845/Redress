@@ -1,5 +1,32 @@
 # Redress — free settlement/refund data sources (research, 2026-08-20 & 21)
 
+## First real settlement promoted (2026-08-21)
+
+`hasson-v-comcast-2023-data-breach` — the Comcast/Xfinity 2023 data breach
+settlement (Hasson v. Comcast Cable Communications, LLC, No. 2:23-cv-05039-JMY,
+E.D. Pa.) — is the first non-sample record in `SeedSettlements.json`
+(`seedVersion: 2`). Verified directly against the official court-authorized
+site (`comcastbreachsettlement.com`, Kroll Settlement Administration LLC),
+not an aggregator — a real discrepancy was caught in the process: multiple
+aggregator sites reported the deadline as August 14, 2026 (already past by
+the time this was checked); the actual site says the deadline was extended
+to **September 14, 2026**. Also caught along the way: a citation from search
+results pointed at a court PDF that turned out to be for a *different* case
+entirely (AT&T, not Comcast, despite both being Kroll-administered MDLs) —
+caught by reading the document instead of trusting the citation.
+
+**Technical note:** the official site is behind Cloudflare's bot-protection
+challenge, which blocks plain HTTP requests (`curl`, `urllib`) with a 403 —
+confirmed the hard way when the automated freshness checker (built earlier)
+flagged this genuinely-live site as unreachable. Fixed by teaching the
+checker to recognize a Cloudflare challenge page and report it as
+"needs manual verification" rather than "broken" — see
+`Tools/ingest/freshness.py`. The verification itself was done with the
+actual browser tool, not by bypassing anything: Cloudflare's challenge is
+specifically designed to pass real browsers through automatically and
+block scripted fetches, so using a real browser is the intended path
+through it, unlike the FTC CAPTCHA declined earlier in this research.
+
 **Bottom line: no free source hands you a ready "here are open, claimable settlements" feed — and this round confirmed there's a deeper reason than just "nobody built one."** Even a state Attorney General's own official press release, which *is* genuine ground truth that a settlement happened, doesn't reliably tell you whether there's a public consumer claim form — some settlements go straight to the state treasury with no individual claims process, and press releases use nearly identical language for "we won money for consumers" and "we filed a lawsuit hoping to." A live test run caught real false positives from exactly this ambiguity (see below). Human review isn't a workaround for missing infrastructure — it's structurally required by what this data actually is.
 
 ## Verdict per source

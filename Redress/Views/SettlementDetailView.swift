@@ -44,6 +44,8 @@ struct SettlementDetailView: View {
                 Text(settlement.settlementDescription)
                     .font(.body)
 
+                SourceProvenanceView(settlement: settlement)
+
                 Button {
                     attemptStartClaim()
                 } label: {

@@ -14,6 +14,15 @@ final class Settlement {
     var claimDeadline: Date
     var isSampleData: Bool
 
+    /// Provenance — shown in the UI so a user can judge freshness/trust
+    /// themselves rather than relying on hidden certainty. sourceName is
+    /// e.g. "California Attorney General" or "Redress team (manually
+    /// verified)"; sourceURL points at the original announcement/docket,
+    /// not the claims portal; sourceDate is when that source was published.
+    var sourceName: String = "Unknown"
+    var sourceURLString: String?
+    var sourceDate: Date?
+
     var proofRequirement: ProofRequirement {
         get { ProofRequirement(rawValue: proofRequirementRaw) ?? .none }
         set { proofRequirementRaw = newValue.rawValue }
@@ -21,6 +30,10 @@ final class Settlement {
 
     var administratorPortalURL: URL? {
         URL(string: administratorPortalURLString)
+    }
+
+    var sourceURL: URL? {
+        sourceURLString.flatMap(URL.init(string:))
     }
 
     init(
@@ -33,7 +46,10 @@ final class Settlement {
         administratorName: String,
         administratorPortalURLString: String,
         claimDeadline: Date,
-        isSampleData: Bool
+        isSampleData: Bool,
+        sourceName: String = "Unknown",
+        sourceURLString: String? = nil,
+        sourceDate: Date? = nil
     ) {
         self.id = id
         self.title = title
@@ -45,5 +61,8 @@ final class Settlement {
         self.administratorPortalURLString = administratorPortalURLString
         self.claimDeadline = claimDeadline
         self.isSampleData = isSampleData
+        self.sourceName = sourceName
+        self.sourceURLString = sourceURLString
+        self.sourceDate = sourceDate
     }
 }

@@ -1,3 +1,4 @@
+import io
 import json
 import tempfile
 import unittest
@@ -46,6 +47,34 @@ class CheckUrlFreshnessTests(unittest.TestCase):
         self.assertFalse(result.is_reachable)
         self.assertIsNotNone(result.error)
 
+    def test_cloudflare_403_is_flagged_for_manual_check_not_as_broken(self):
+        """Regression test: comcastbreachsettlement.com (a genuinely live,
+        current settlement site) 403s this checker's plain HTTP request the
+        same way it 403'd a bare curl — confirmed live 2026-08-21, verified
+        actually live via a real browser instead. Must not be reported the
+        same as a real dead link."""
+        cloudflare_body = (b'<html><head><title>Attention Required! | Cloudflare</title>'
+                            b'<meta name="robots" content="noindex, nofollow" /></head><body>'
+                            b'cf-browser-verification</body></html>')
+        error = urllib.error.HTTPError(url="https://example.com/blocked", code=403, msg="Forbidden",
+                                        hdrs=None, fp=io.BytesIO(cloudflare_body))
+        with patch.object(urllib.request, "urlopen", side_effect=error):
+            result = check_url_freshness("https://example.com/blocked")
+
+        self.assertFalse(result.is_reachable)
+        self.assertTrue(result.blocked_by_bot_protection)
+        self.assertFalse(result.needs_attention, "a bot-protection block must not read as a dead link")
+        self.assertTrue(result.needs_manual_verification)
+
+    def test_a_genuine_404_is_not_misread_as_bot_protection(self):
+        error = urllib.error.HTTPError(url="https://example.com/gone", code=404, msg="Not Found",
+                                        hdrs=None, fp=io.BytesIO(b"<html>Not Found</html>"))
+        with patch.object(urllib.request, "urlopen", side_effect=error):
+            result = check_url_freshness("https://example.com/gone")
+
+        self.assertFalse(result.blocked_by_bot_protection)
+        self.assertTrue(result.needs_attention)
+
     def test_empty_or_invalid_url_does_not_attempt_a_request(self):
         result = check_url_freshness("")
         self.assertFalse(result.is_reachable)
@@ -91,6 +120,36 @@ class CheckSeedFileTests(unittest.TestCase):
         self.assertEqual(results[0]["title"], "Test Settlement")
         self.assertTrue(results[0]["isSampleData"])
         self.assertFalse(results[0]["needs_attention"])
+
+    def test_reads_the_real_wrapped_seedversion_schema(self):
+        """Regression test: this tool originally assumed a bare JSON array
+        and broke (AttributeError) the moment the real seed file was
+        wrapped with a seedVersion field for the upsert mechanism — caught
+        by actually running it against the real seed file, not by this
+        test alone. Covers both shapes now."""
+        seed_file = {
+            "seedVersion": 2,
+            "settlements": [{
+                "id": "real-1",
+                "title": "Real Settlement",
+                "isSampleData": False,
+                "administratorPortalURLString": "https://example.gov/claim",
+            }],
+        }
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(seed_file, f)
+            path = f.name
+
+        with patch("Tools.ingest.freshness.check_url_freshness") as mock_check:
+            from ..freshness import FreshnessResult
+            mock_check.return_value = FreshnessResult(
+                url="https://example.gov/claim", checked_at="2026-08-21T00:00:00Z",
+                is_reachable=True, status_code=200, looks_like_claims_content=True,
+            )
+            results = check_seed_file(path)
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["title"], "Real Settlement")
 
 
 if __name__ == "__main__":
