@@ -12,15 +12,17 @@ mirrors Owed's own PIPELINE.md: "a settlement is never published from an
 aggregator alone."
 
 Requirements:
-  - Free CourtListener account + API token: https://www.courtlistener.com
-    (Sign up, then find your token under your profile -> API.)
-  - Rate limits on the free tier (confirmed 2026-08-20): 5 req/min,
-    50 req/hour, 125 req/day. This script sleeps between requests and
-    caps how many pages it pulls per run to stay well under that.
+  - None strictly — CourtListener's search API allows unauthenticated GET
+    requests (confirmed 2026-08-21: HTTP 200, real results, no token sent).
+  - Optional: a free CourtListener account + API token raises the rate
+    limit (confirmed for authenticated free tier: 5 req/min, 50/hour,
+    125/day — anonymous limits are unconfirmed/likely lower, so this script
+    stays conservative regardless of whether a token is set).
 
 Usage:
-  export COURTLISTENER_API_TOKEN="your-token-here"
   python3 Tools/fetch_courtlistener_leads.py --query "class action settlement" --max-results 20
+  # Optionally, for a higher rate limit:
+  export COURTLISTENER_API_TOKEN="your-token-here"
 
 Output:
   Tools/leads.json — array of lead records for a human to review.
@@ -33,14 +35,16 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+from typing import Optional
 
 API_BASE = "https://www.courtlistener.com/api/rest/v4"
 MAX_REQUESTS_PER_RUN = 10  # well under the 50/hour free-tier cap
 SECONDS_BETWEEN_REQUESTS = 3
 
 
-def fetch_page(url: str, token: str) -> dict:
-    request = urllib.request.Request(url, headers={"Authorization": f"Token {token}"})
+def fetch_page(url: str, token: Optional[str]) -> dict:
+    headers = {"Authorization": f"Token {token}"} if token else {}
+    request = urllib.request.Request(url, headers=headers)
     with urllib.request.urlopen(request, timeout=30) as response:
         return json.loads(response.read().decode("utf-8"))
 
@@ -55,11 +59,13 @@ def main() -> int:
 
     token = os.environ.get("COURTLISTENER_API_TOKEN")
     if not token:
-        print("ERROR: set COURTLISTENER_API_TOKEN (free account at courtlistener.com).",
+        print("No COURTLISTENER_API_TOKEN set — running unauthenticated (lower rate limit, still works).",
               file=sys.stderr)
-        return 1
 
-    params = urllib.parse.urlencode({"q": args.query, "type": "r"})  # type=r: RECAP dockets
+    # order_by dateFiled desc: a keyword-only search is dominated by old,
+    # long-closed cases (confirmed 2026-08-21 — most hits were 2005-2016),
+    # which are useless as "currently open" leads. Bias toward recent filings.
+    params = urllib.parse.urlencode({"q": args.query, "type": "r", "order_by": "dateFiled desc"})
     url = f"{API_BASE}/search/?{params}"
 
     leads = []
@@ -81,7 +87,7 @@ def main() -> int:
                 "court": result.get("court") or result.get("court_id"),
                 "date_filed": result.get("dateFiled") or result.get("date_filed"),
                 "docket_number": result.get("docketNumber") or result.get("docket_number"),
-                "courtlistener_url": "https://www.courtlistener.com" + result.get("absolute_url", ""),
+                "courtlistener_url": "https://www.courtlistener.com" + result.get("docket_absolute_url", ""),
                 "status": "lead-needs-review",
                 "note": (
                     "NOT a confirmed open settlement. A docket existing does not mean "
