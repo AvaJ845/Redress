@@ -1,0 +1,26 @@
+name: Settlement freshness check
+
+# Runs on its own schedule so nobody has to remember to check whether a
+# published settlement's administrator URL has gone dead or stopped
+# looking claims-related. This is an objective, code-only check — no
+# reviewer (human or AI) needed — so it's automated first, ahead of
+# anything that requires real judgment. A failing run sends GitHub's
+# standard scheduled-workflow-failure email to repo watchers; no custom
+# notification server needed.
+
+on:
+  schedule:
+    - cron: "0 13 * * *"  # daily, 13:00 UTC
+  workflow_dispatch:
+
+jobs:
+  check-freshness:
+    name: Check administrator URLs are still live
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Check every settlement's administrator URL
+        run: python3 -m Tools.ingest.freshness

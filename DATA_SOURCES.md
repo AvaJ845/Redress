@@ -29,3 +29,19 @@ Both fixes are covered by regression tests in `Tools/ingest/tests/test_state_ag_
 2. **`confidence: ground_truth` means "the announcement is authentic," not "ready to publish."** Every ground-truth candidate still needs a human to find (or confirm the absence of) an actual administrator site, deadline, and proof requirements — those fields don't exist in a press release regardless of how trustworthy the source is. This is intentional, not a shortcut that got missed.
 3. **To run it:** `python3 -m Tools.ingest.engine` (no token/signup needed). Output goes to `Tools/leads.json`, gitignored, never auto-published.
 4. **The placeholder seed data stays placeholder** (`isSampleData: true`) until a real lead is actually reviewed and confirmed against its administrator site. No fabricated "real" settlement was added to close this gap artificially.
+
+## The non-manual-review plan (2026-08-21)
+
+Redress never files on a user's behalf — it only surfaces information and
+deep-links to the official administrator portal. That changes the failure
+mode of getting something wrong: a stale deadline costs a user time, not
+money or a bad submission, since the truth is on the real official site
+the moment they land on it. That's still real harm worth minimizing, but
+a meaningfully lower risk tier than an app that files for you — and it's
+what makes automating review viable at all here.
+
+Options considered, ranked by what's actually been built:
+
+1. **Automated freshness re-verification — built.** [`Tools/ingest/freshness.py`](Tools/ingest/freshness.py) re-checks every settlement's administrator URL: still resolves, still looks claims-related (not a legal judgment, just "does it still mention claim/deadline/eligibility/settlement language"). Zero judgment required, so no reviewer — human or AI — is needed for it. Runs daily via [`.github/workflows/freshness-check.yml`](.github/workflows/freshness-check.yml); a failing run emails repo watchers automatically (GitHub's own scheduled-workflow-failure notification, no custom server). Verified against the real seed data: correctly flagged both placeholder `example.com` URLs as dead (404), proving it actually catches problems rather than rubber-stamping.
+2. **LLM-based automated lead review — not built yet, deliberately.** Would replace the human step-for-step: read a docket/press-release, extract deadline/eligibility/administrator, flag "insufficient information" when it can't tell. Real judgment quality, genuinely non-manual — but it's a real decision (an LLM gets editorial authority over what real users see) with a real recurring cost (Anthropic API key required). Held pending that decision, not forgotten.
+3. **Full source-and-date transparency in the UI** — not yet wired into the app itself. Showing "per California AG, Aug 20 2026" next to a listing shifts residual risk to informed consent instead of hidden certainty. Cheap to add once real (non-sample) data exists to show it on.
