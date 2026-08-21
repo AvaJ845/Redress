@@ -15,11 +15,7 @@ struct PaywallView: View {
                     Text(reason)
                         .font(.headline)
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        FeatureRow(icon: "infinity", text: "Track unlimited claims at once")
-                        FeatureRow(icon: "doc.text.fill", text: "Encrypted document vault, on this device only")
-                        FeatureRow(icon: "bell.badge", text: "Deadline reminders across every claim")
-                    }
+                    PlanComparisonView()
 
                     if let product = subscriptions.product {
                         Button {
@@ -89,19 +85,6 @@ struct PaywallView: View {
                 errorMessage = "Purchase failed. Please try again."
             }
             isPurchasing = false
-        }
-    }
-}
-
-private struct FeatureRow: View {
-    let icon: String
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .frame(width: 24)
-            Text(text)
         }
     }
 }
