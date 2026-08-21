@@ -32,7 +32,14 @@ class CourtListenerSource(SettlementSource):
             return json.loads(response.read().decode("utf-8"))
 
     def fetch(self, query: str, max_results: int) -> List[Candidate]:
-        params = urllib.parse.urlencode({"q": query, "type": "r", "order_by": "dateFiled desc"})
+        # Plain keyword search is dominated by noise: unscoped "class action
+        # settlement" matches 600K+ dockets, mostly years-old and closed.
+        # Confirmed 2026-08-21: scoping part of the query to the docket-entry
+        # description field for settlement-stage language ("final approval")
+        # narrows this to ~15K and returns genuinely recent, relevant cases —
+        # still not proof a claim window is open, but a real precision gain.
+        precise_query = f'{query} AND description:"final approval"'
+        params = urllib.parse.urlencode({"q": precise_query, "type": "r", "order_by": "dateFiled desc"})
         url = f"{API_BASE}/search/?{params}"
 
         candidates: List[Candidate] = []

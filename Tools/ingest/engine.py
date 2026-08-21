@@ -21,17 +21,24 @@ from typing import Dict, List
 
 from .sources.base import Candidate, SettlementSource
 from .sources.courtlistener import CourtListenerSource
+from .sources.state_ag_rss import FEEDS as AG_FEEDS
+from .sources.state_ag_rss import StateAGRSSSource
 
 # Registry of active sources. Add a new source by writing a class in
 # sources/ implementing SettlementSource, then adding an instance here —
 # nothing else in this file needs to change.
 DEFAULT_SOURCES: List[SettlementSource] = [
     CourtListenerSource(),
-    # Ground-truth sources (FTC redress announcements, SEC litigation
-    # releases, state AG press feeds, claims-administrator case lists) slot
-    # in here once confirmed to have a real structured/scrapeable endpoint
-    # with acceptable ToS — see DATA_SOURCES.md for what's been verified
-    # and what hasn't. Do not add a source here on a guess.
+    *[StateAGRSSSource(state, url) for state, url in AG_FEEDS.items()],
+    # FTC: no usable feed found (real dashboard exists but is CAPTCHA-gated).
+    # SEC litigation-releases RSS: URL confirmed to exist but not yet
+    # verified with a clean fetch (rate-limited during research) — don't
+    # wire in until actually confirmed, not just "probably works."
+    # NY/TX/IL AG: no discoverable RSS feed found — don't guess a URL.
+    # Claims-administrator sitemaps (JND, Angeion, A.B. Data, Simpluris):
+    # confirmed to exist but are general marketing sitemaps, not
+    # per-case structured data — not usable as-is.
+    # See DATA_SOURCES.md for the full verification record.
 ]
 
 
