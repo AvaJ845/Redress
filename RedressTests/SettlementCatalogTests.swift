@@ -99,4 +99,34 @@ final class SettlementCatalogTests: XCTestCase {
         XCTAssertEqual(claims.count, 1, "claim must survive a settlement update")
         XCTAssertEqual(claims.first?.settlementID, "a")
     }
+
+    func testSettlementDroppedFromSeedIsActuallyDeleted() throws {
+        let v1 = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(seedRecord(id: "a", title: "First")),\#(seedRecord(id: "b", title: "Second"))]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: v1)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<Settlement>()).count, 2)
+
+        let v2 = writeSeedFile(#"{"seedVersion":2,"settlements":[\#(seedRecord(id: "a", title: "First"))]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: v2)
+
+        let results = try context.fetch(FetchDescriptor<Settlement>())
+        XCTAssertEqual(results.count, 1, "dropping a record from the seed file must actually remove it, not just stop updating it")
+        XCTAssertEqual(results.first?.id, "a")
+    }
+
+    func testSettlementDroppedFromSeedIsKeptIfAClaimReferencesIt() throws {
+        let v1 = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(seedRecord(id: "a", title: "First"))]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: v1)
+
+        let claim = Claim(settlementID: "a", settlementTitle: "First")
+        context.insert(claim)
+        context.saveOrLog()
+
+        // "a" is dropped entirely from v2 — but a real user claim points at it.
+        let v2 = writeSeedFile(#"{"seedVersion":2,"settlements":[]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: v2)
+
+        let results = try context.fetch(FetchDescriptor<Settlement>())
+        XCTAssertEqual(results.count, 1, "must not delete a settlement a user has an active claim against")
+        XCTAssertEqual(results.first?.id, "a")
+    }
 }

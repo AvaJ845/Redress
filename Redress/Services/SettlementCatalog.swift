@@ -83,7 +83,32 @@ enum SettlementCatalog {
             }
         }
 
+        removeSettlementsNoLongerInSeed(seedFile: seedFile, existingByID: existingByID, context: context)
+
         context.saveOrLog()
         UserDefaults.standard.set(seedFile.seedVersion, forKey: appliedSeedVersionKey)
+    }
+
+    /// A settlement dropped from the seed file (e.g. a sample record
+    /// removed once real data exists) should actually go away, not just
+    /// stop being updated — otherwise "remove sample data" silently does
+    /// nothing for anyone who already has the app. But never delete one a
+    /// user has an active Claim against: that would orphan real user data
+    /// over a catalog change they had nothing to do with. ClaimDetailView
+    /// already handles a missing settlement gracefully, but leaving the
+    /// record in place — stale, unupdated, but intact — is strictly better
+    /// for a claim someone is actively tracking.
+    private static func removeSettlementsNoLongerInSeed(
+        seedFile: SeedFile,
+        existingByID: [String: Settlement],
+        context: ModelContext
+    ) {
+        let seedIDs = Set(seedFile.settlements.map(\.id))
+        let claimedSettlementIDs = Set(((try? context.fetch(FetchDescriptor<Claim>())) ?? []).map(\.settlementID))
+
+        for (id, settlement) in existingByID where !seedIDs.contains(id) {
+            guard !claimedSettlementIDs.contains(id) else { continue }
+            context.delete(settlement)
+        }
     }
 }

@@ -1,5 +1,5 @@
 {
-  "seedVersion": 2,
+  "seedVersion": 3,
   "settlements": [
     {
       "id": "hasson-v-comcast-2023-data-breach",
@@ -15,36 +15,6 @@
       "sourceName": "Official court-authorized settlement website, verified directly (not via aggregator)",
       "sourceURLString": "https://www.comcastbreachsettlement.com",
       "sourceDate": "2026-08-21T00:00:00Z"
-    },
-    {
-      "id": "sample-001",
-      "title": "Sample Snack Co. Labeling Settlement",
-      "brand": "Sample Snack Co. (placeholder)",
-      "description": "Placeholder record demonstrating the data model. Replace with real, human-reviewed settlements sourced from official announcements before shipping.",
-      "eligibilityCriteria": "Placeholder: purchased a Sample Snack Co. product between Jan 2024 and Dec 2024.",
-      "proofRequirement": "selfCertify",
-      "administratorName": "Sample Administrator LLC",
-      "administratorPortalURLString": "https://example.com/sample-claim-portal",
-      "claimDeadline": "2026-12-01T00:00:00Z",
-      "isSampleData": true,
-      "sourceName": "Redress team (placeholder, not a real settlement)",
-      "sourceURLString": null,
-      "sourceDate": null
-    },
-    {
-      "id": "sample-002",
-      "title": "Sample Streaming Co. Overcharge Settlement",
-      "brand": "Sample Streaming Co. (placeholder)",
-      "description": "Placeholder record. Strict-proof example: shows the UI path for a settlement that requires an uploaded document.",
-      "eligibilityCriteria": "Placeholder: charged a monthly fee by Sample Streaming Co. after cancellation between Jun 2023 and Jun 2024.",
-      "proofRequirement": "strictProof",
-      "administratorName": "Sample Administrator LLC",
-      "administratorPortalURLString": "https://example.com/sample-claim-portal-2",
-      "claimDeadline": "2026-10-15T00:00:00Z",
-      "isSampleData": true,
-      "sourceName": "Redress team (placeholder, not a real settlement)",
-      "sourceURLString": null,
-      "sourceDate": null
     }
   ]
 }
