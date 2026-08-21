@@ -1,0 +1,49 @@
+import Foundation
+import SwiftData
+
+@Model
+final class Settlement {
+    @Attribute(.unique) var id: String
+    var title: String
+    var brand: String
+    var settlementDescription: String
+    var eligibilityCriteria: String
+    var proofRequirementRaw: String
+    var administratorName: String
+    var administratorPortalURLString: String
+    var claimDeadline: Date
+    var isSampleData: Bool
+
+    var proofRequirement: ProofRequirement {
+        get { ProofRequirement(rawValue: proofRequirementRaw) ?? .none }
+        set { proofRequirementRaw = newValue.rawValue }
+    }
+
+    var administratorPortalURL: URL? {
+        URL(string: administratorPortalURLString)
+    }
+
+    init(
+        id: String,
+        title: String,
+        brand: String,
+        settlementDescription: String,
+        eligibilityCriteria: String,
+        proofRequirement: ProofRequirement,
+        administratorName: String,
+        administratorPortalURLString: String,
+        claimDeadline: Date,
+        isSampleData: Bool
+    ) {
+        self.id = id
+        self.title = title
+        self.brand = brand
+        self.settlementDescription = settlementDescription
+        self.eligibilityCriteria = eligibilityCriteria
+        self.proofRequirementRaw = proofRequirement.rawValue
+        self.administratorName = administratorName
+        self.administratorPortalURLString = administratorPortalURLString
+        self.claimDeadline = claimDeadline
+        self.isSampleData = isSampleData
+    }
+}

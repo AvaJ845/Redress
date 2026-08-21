@@ -1,0 +1,44 @@
+{
+  "identifier" : "REDRESS01",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_applicationInternalID" : "redress",
+    "_developerTeamID" : "",
+    "_lastSynchronizedDate" : 0
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "REDRESSPLUS",
+      "localizations" : [],
+      "name" : "Redress Plus",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "29.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "RPLUSYEARLY01",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unlimited tracked claims, the encrypted document vault, and deadline reminders across every claim. Annual only — no monthly plan, so there's nothing to double-bill.",
+              "displayName" : "Redress Plus (Yearly)",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "AvaResearchLLC.Redress.plus.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Plus Yearly",
+          "subscriptionGroupID" : "REDRESSPLUS",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

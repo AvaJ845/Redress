@@ -1,0 +1,15 @@
+# Xcode / build (regenerate with: xcodegen generate)
+*.xcodeproj
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# Local signing (never commit)
+Config/Signing.xcconfig
+
+# macOS
+.DS_Store
+
+# Data leads pending human review — never auto-published
+Tools/leads.json
