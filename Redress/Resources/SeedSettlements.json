@@ -1,5 +1,5 @@
 {
-  "seedVersion": 3,
+  "seedVersion": 4,
   "settlements": [
     {
       "id": "hasson-v-comcast-2023-data-breach",
@@ -14,7 +14,7 @@
       "isSampleData": false,
       "sourceName": "Official court-authorized settlement website, verified directly (not via aggregator)",
       "sourceURLString": "https://www.comcastbreachsettlement.com",
-      "sourceDate": "2026-08-21T00:00:00Z"
+      "sourceDate": "2026-08-21T12:00:00Z"
     }
   ]
 }

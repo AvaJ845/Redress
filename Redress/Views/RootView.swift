@@ -1,13 +1,14 @@
 import SwiftUI
 
 enum RootSection: String, CaseIterable, Identifiable {
-    case settlements, claims, account
+    case settlements, watching, claims, account
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .settlements: return "Settlements"
+        case .watching: return "Watching"
         case .claims: return "My Claims"
         case .account: return "Account"
         }
@@ -16,6 +17,7 @@ enum RootSection: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .settlements: return "magnifyingglass"
+        case .watching: return "eye"
         case .claims: return "checklist"
         case .account: return "person.circle"
         }
@@ -47,6 +49,8 @@ private struct RootTabView: View {
         TabView {
             SettlementListView()
                 .tabItem { Label(RootSection.settlements.title, systemImage: RootSection.settlements.icon) }
+            WatchlistListView()
+                .tabItem { Label(RootSection.watching.title, systemImage: RootSection.watching.icon) }
             ClaimListView()
                 .tabItem { Label(RootSection.claims.title, systemImage: RootSection.claims.icon) }
             SettingsView()
@@ -70,6 +74,8 @@ private struct RootSplitView: View {
             switch selection {
             case .settlements:
                 SettlementListView()
+            case .watching:
+                WatchlistListView()
             case .claims:
                 ClaimListView()
             case .account:

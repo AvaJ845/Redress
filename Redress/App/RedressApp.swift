@@ -4,7 +4,7 @@ import SwiftData
 @main
 struct RedressApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([Settlement.self, Claim.self])
+        let schema = Schema([Settlement.self, Claim.self, WatchlistCase.self])
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         return try! ModelContainer(for: schema, configurations: [configuration])
     }()

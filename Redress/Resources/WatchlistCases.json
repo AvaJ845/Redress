@@ -1,0 +1,18 @@
+{
+  "watchlistVersion": 1,
+  "cases": [
+    {
+      "id": "surber-v-oura-2026",
+      "caseName": "Surber v. Oura, Inc.",
+      "company": "Oura",
+      "court": "N.D. California",
+      "dateFiled": "2026-08-20T12:00:00Z",
+      "docketNumber": "3:26-cv-08686",
+      "summary": "Proposed class action filed by Clarkson Law Firm accusing Oura of misleading consumers about the sleep-tracking accuracy of the Oura Ring. Seeks injunctive relief and restitution for consumers who purchased based on the allegedly false claims. This is a same-day filing — no settlement, administrator, deadline, or claim form exists yet. There is nothing to claim right now; this entry exists so you can see it early, not to suggest otherwise.",
+      "docketURLString": "https://www.courtlistener.com/docket/74676961/surber-v-oura-inc/",
+      "sourceName": "TechCrunch report, cross-checked directly against the federal docket (CourtListener)",
+      "sourceURLString": "https://techcrunch.com/2026/08/21/oura-faces-lawsuit-accusing-it-of-misleading-consumers-about-sleep-tracking-accuracy/",
+      "sourceDate": "2026-08-21T12:00:00Z"
+    }
+  ]
+}
