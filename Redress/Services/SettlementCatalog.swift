@@ -33,7 +33,11 @@ enum SettlementCatalog {
     /// reference settlementID, not the Settlement object itself).
     static let appliedSeedVersionKey = "redress.appliedSeedVersion"
 
-    static func loadSeedIfNeeded(into context: ModelContext, seedFileURL: URL? = nil) {
+    static func loadSeedIfNeeded(
+        into context: ModelContext,
+        seedFileURL: URL? = nil,
+        rescheduleReminder: (Claim, Settlement) -> Void = NotificationManager.scheduleDeadlineReminder
+    ) {
         let url = seedFileURL ?? Bundle.main.url(forResource: "SeedSettlements", withExtension: "json")
         guard let url, let data = try? Data(contentsOf: url) else { return }
         guard let seedFile = try? JSONDecoder().decode(SeedFile.self, from: data) else { return }
@@ -51,6 +55,8 @@ enum SettlementCatalog {
             let proofRequirement = ProofRequirement(rawValue: dto.proofRequirement) ?? .none
 
             if let record = existingByID[dto.id] {
+                let previousDeadline = record.claimDeadline
+
                 record.title = dto.title
                 record.brand = dto.brand
                 record.settlementDescription = dto.description
@@ -64,6 +70,10 @@ enum SettlementCatalog {
                 record.sourceDate = sourceDate
                 record.isSampleData = dto.isSampleData
                 record.payoutText = dto.payoutText
+
+                if deadline != previousDeadline {
+                    rescheduleRemindersForClaims(against: record, context: context, reschedule: rescheduleReminder)
+                }
             } else {
                 let settlement = Settlement(
                     id: dto.id,
@@ -112,6 +122,29 @@ enum SettlementCatalog {
         for (id, settlement) in existingByID where !seedIDs.contains(id) {
             guard !claimedSettlementIDs.contains(id) else { continue }
             context.delete(settlement)
+        }
+    }
+
+    /// A settlement's deadline can be corrected by a real-world update
+    /// (extended, or moved up) after a user has already started a claim
+    /// against it — and `NotificationManager` already scheduled a local
+    /// reminder based on the *old* deadline at that point. Without this,
+    /// the reminder would silently keep pointing at a date that's no
+    /// longer real, which is exactly the kind of confidently-wrong
+    /// behavior the rest of this app (see `SourceProvenanceView`) exists
+    /// to avoid. `rescheduleReminder` defaults to the real
+    /// `NotificationManager` call but is injectable so tests can verify
+    /// this without touching `UNUserNotificationCenter`.
+    private static func rescheduleRemindersForClaims(
+        against settlement: Settlement,
+        context: ModelContext,
+        reschedule: (Claim, Settlement) -> Void
+    ) {
+        let settlementID = settlement.id
+        let descriptor = FetchDescriptor<Claim>(predicate: #Predicate { $0.settlementID == settlementID })
+        let claims = (try? context.fetch(descriptor)) ?? []
+        for claim in claims {
+            reschedule(claim, settlement)
         }
     }
 }

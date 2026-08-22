@@ -2,7 +2,17 @@ import Foundation
 import UserNotifications
 
 enum NotificationManager {
+    /// Always cancels any existing reminder for this claim before deciding
+    /// whether to schedule a new one. This makes the function safe to call
+    /// again for an already-scheduled claim — e.g. when a settlement's
+    /// deadline is corrected after a claim already exists — instead of
+    /// leaving a stale reminder pointing at a deadline that's no longer
+    /// real. Without this, a deadline moved earlier (so the new trigger
+    /// date is already in the past) would hit the early-return below and
+    /// leave the old, now-wrong reminder in place indefinitely.
     static func scheduleDeadlineReminder(for claim: Claim, settlement: Settlement) {
+        cancelReminder(for: claim)
+
         guard let triggerDate = Calendar.current.date(byAdding: .day, value: -3, to: settlement.claimDeadline),
               triggerDate > Date() else { return }
 

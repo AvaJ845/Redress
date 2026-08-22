@@ -129,6 +129,47 @@ final class SettlementCatalogTests: XCTestCase {
         XCTAssertEqual(results.first?.id, "a")
     }
 
+    func testDeadlineChangeReschedulesReminderForExistingClaim() throws {
+        let v1 = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(seedRecord(id: "a", title: "First", deadline: "2026-12-01T00:00:00Z"))]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: v1)
+
+        let claim = Claim(settlementID: "a", settlementTitle: "First")
+        context.insert(claim)
+        context.saveOrLog()
+
+        var rescheduledClaimIDs: [UUID] = []
+        var rescheduledDeadlines: [Date] = []
+
+        let v2 = writeSeedFile(#"{"seedVersion":2,"settlements":[\#(seedRecord(id: "a", title: "First", deadline: "2027-03-15T00:00:00Z"))]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: v2) { rescheduledClaim, settlement in
+            rescheduledClaimIDs.append(rescheduledClaim.id)
+            rescheduledDeadlines.append(settlement.claimDeadline)
+        }
+
+        XCTAssertEqual(rescheduledClaimIDs, [claim.id], "the claim against the settlement whose deadline changed must be rescheduled")
+        XCTAssertEqual(rescheduledDeadlines.first, ISO8601DateFormatter().date(from: "2027-03-15T00:00:00Z"))
+    }
+
+    func testUnchangedDeadlineDoesNotTriggerReschedule() throws {
+        let v1 = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(seedRecord(id: "a", title: "First", deadline: "2026-12-01T00:00:00Z"))]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: v1)
+
+        let claim = Claim(settlementID: "a", settlementTitle: "First")
+        context.insert(claim)
+        context.saveOrLog()
+
+        var rescheduleCallCount = 0
+
+        // Same deadline, only the title changes — nothing about the
+        // reminder itself needs to change, so it shouldn't be touched.
+        let v2 = writeSeedFile(#"{"seedVersion":2,"settlements":[\#(seedRecord(id: "a", title: "Corrected Title", deadline: "2026-12-01T00:00:00Z"))]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: v2) { _, _ in
+            rescheduleCallCount += 1
+        }
+
+        XCTAssertEqual(rescheduleCallCount, 0, "a title-only change must not trigger a reminder reschedule")
+    }
+
     func testSettlementDroppedFromSeedIsKeptIfAClaimReferencesIt() throws {
         let v1 = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(seedRecord(id: "a", title: "First"))]}"#)
         SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: v1)
