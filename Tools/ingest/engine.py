@@ -23,6 +23,7 @@ from .sources.base import Candidate, SettlementSource
 from .sources.courtlistener import CourtListenerSource
 from .sources.state_ag_rss import FEEDS as AG_FEEDS
 from .sources.state_ag_rss import StateAGRSSSource
+from .sources.verita import VeritaSource
 
 # Registry of active sources. Add a new source by writing a class in
 # sources/ implementing SettlementSource, then adding an instance here —
@@ -30,14 +31,18 @@ from .sources.state_ag_rss import StateAGRSSSource
 DEFAULT_SOURCES: List[SettlementSource] = [
     CourtListenerSource(),
     *[StateAGRSSSource(state, url) for state, url in AG_FEEDS.items()],
+    VeritaSource(),
     # FTC: no usable feed found (real dashboard exists but is CAPTCHA-gated).
-    # SEC litigation-releases RSS: URL confirmed to exist but not yet
-    # verified with a clean fetch (rate-limited during research) — don't
-    # wire in until actually confirmed, not just "probably works."
+    # SEC litigation-releases RSS: confirmed working, but tested against 50
+    # real items with two keyword sets and matched zero — SEC enforcement
+    # releases are fraud/insider-trading actions, not consumer settlements.
+    # Not wired in on real evidence, not because it's unconfirmed.
     # NY/TX/IL AG: no discoverable RSS feed found — don't guess a URL.
-    # Claims-administrator sitemaps (JND, Angeion, A.B. Data, Simpluris):
-    # confirmed to exist but are general marketing sitemaps, not
-    # per-case structured data — not usable as-is.
+    # JND/Angeion/A.B. Data/Simpluris sitemaps: confirmed to exist but are
+    # general marketing sitemaps, not per-case structured data. Verita
+    # (Kroll's post-rebrand site) is the exception — a dedicated
+    # settlement-case post type with a real, parseable claim-deadline
+    # field, confirmed 2026-08-21.
     # See DATA_SOURCES.md for the full verification record.
 ]
 
