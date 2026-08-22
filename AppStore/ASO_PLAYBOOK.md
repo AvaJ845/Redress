@@ -53,38 +53,50 @@ is spent once, keyword-first, no repeats.
 The bundle ID, project folder, and all in-app strings have been renamed from
 Recoup → Redress (`AvaResearchLLC.Redress`) and the project rebuilds clean.
 
-## 3 · Conversion — win the tap ⏳ (icon + screenshots pending)
+## 3 · Conversion — win the tap ✅ (icon + screenshots done, 2026-08-21)
 
-- [ ] **App icon** — needs a real mark; current build ships with an empty
-  placeholder `AppIcon.appiconset` (compiles, but has no artwork).
-- [ ] **Screenshots (6.9"):** lead with the payoff, one idea per frame, real
-  captured UI, not abstract art (source deck's own A/B evidence: authentic
-  beats abstract). Suggested order: claim list with live status badges →
-  document vault ("stays on your device") detail → deadline-reminder detail
-  → the privacy pledge as a trust beat (mirroring Kestrel's "not a forecast"
-  pledge — Redress's version: "we never see your documents").
+- [x] **App icon** — shield + checkmark mark, teal-to-navy gradient,
+  generated programmatically (`Tools/make_icon.py`), legible at
+  home-screen size. Not a placeholder — real artwork, confirmed via
+  Xcode's own iPad icon auto-generation from the single 1024 source.
+- [x] **Screenshots (6.9", 1320×2868 — verified exact, not eyeballed):**
+  six real captures in `AppStore/Screenshots/6.9-inch/`, real UI with real
+  data (the actual Comcast settlement, not sample content), no abstract
+  art:
+  1. `01_settlements.png` — Open Settlements hero
+  2. `02_settlement_detail.png` — eligibility/proof/deadline + source
+     provenance line ("per official settlement website, Aug 20 2026")
+  3. `03_claim_detail.png` — status picker, payout tracking, notes,
+     document vault (locked on Free), live deep-link to the real Kroll
+     portal
+  4. `04_myclaims.png` — claim list with the live status badge
+  5. `05_account_privacy.png` — the privacy pledge as the trust beat
+  6. `06_paywall.png` — the Free-vs-Plus comparison table
+  Deviates from the originally suggested order (privacy pledge was
+  planned as frame 3) because capturing in actual navigation order,
+  through the real app, was more honest than staging a specific sequence.
 - [ ] **(Optional) App Preview:** 15–20s of starting a claim → adding a
-  document → the deep-link handoff to the official portal.
+  document → the deep-link handoff to the official portal. Not done.
 - **Product-page A/B test (after launch):** hero screenshot order first —
   document-vault-privacy frame vs. claim-list-status frame.
 
-## 4 · Momentum — compound ⏳ (post-launch)
+## 4 · Momentum — compound ✅ built / ⏳ post-launch
 
-- [ ] **Ask at the happy moment** — fire `requestReview` after a claim's
-  status is manually moved to `paid`, once per app version. Never at launch
-  or right after adding a document (that's mid-task, not a win).
-- [ ] **Reply to every review** — thank the good, fix the bad.
-- [ ] **Roadmap signal:** if repeated reviews ask for the same thing (e.g. a
-  real settlement-discovery feed instead of manual/seed entries — see
-  Owed's `feedctl` as prior art if that's ever revisited), build it and say
-  so in a reply.
+- [x] **Ask at the happy moment** — `ReviewPrompt.swift` fires
+  `requestReview` after a claim's status moves to `paid`, once per app
+  version (`UserDefaults`-gated), never at launch. Built and tested.
+- [ ] **Reply to every review** — thank the good, fix the bad. Post-launch
+  operational task, not code.
+- [ ] **Roadmap signal:** if repeated reviews ask for the same thing (e.g.
+  more real settlements faster — see `Tools/ingest/` for the multi-source
+  engine already built toward this), prioritize it and say so in a reply.
 - [ ] Track keyword rank monthly; rotate the weakest hidden keyword each
-  update.
+  update. Post-launch.
 
 ## Status
 - Discovery: **done**, paste-ready in `METADATA.md`.
 - Naming Council: **Approve**, final.
-- Conversion: icon + screenshots **pending** (need real UI captures on a
-  6.9" sim).
-- Momentum: review-prompt gate **not wired yet**; replying + keyword
-  tracking are post-launch operations.
+- Conversion: icon **done**, screenshots **done** (real 6.9" captures,
+  real data). App Preview video optional, not done.
+- Momentum: review-prompt gate **built and tested**; replying + keyword
+  tracking remain genuinely post-launch (need the app to actually be live).
