@@ -1,5 +1,32 @@
 # Redress — free settlement/refund data sources (research, 2026-08-20 & 21)
 
+## A real lead reviewed and correctly NOT promoted (2026-08-22)
+
+The Verita engine's first live find, `Holley Securities Settlement`
+(deadline 19 Nov 2026), went through the same human-review bar as Comcast.
+Result: **not promoted**, and that's the review working as designed, not a
+failed lead.
+
+What was confirmed real, directly against Holley Inc.'s own SEC 10-Q
+filings (not aggregator summaries): the underlying case — *City of Fort
+Lauderdale General Employees' Retirement System v. Holley, Inc.*, W.D.
+Kentucky, No. 1:23-cv-148-S — is genuine, reached an agreement in principle
+April 21, 2026, and received **preliminary court approval August 3, 2026**.
+Verita is genuinely the administrator; the stated deadline is plausible
+against that timeline. This is a *securities* settlement — the class is
+stockholders who held HLLY between July 21, 2021 and February 6, 2023, not
+Holley product customers, an important distinction the bare case name
+doesn't convey.
+
+What could **not** be confirmed: an actual claim-form or official notice
+site. Verita's `settlement-case/` page is a thin marketing index — checked
+every link on it programmatically, and it's all generic site navigation
+(About, Careers, Services), no case-specific submission portal anywhere.
+Without a real URL a user could actually file through, promoting this
+would mean shipping a "Submit" button that doesn't work — the exact
+failure mode this app exists to prevent. Not added to `SeedSettlements.json`.
+Revisit if a dedicated notice site for this case surfaces later.
+
 ## First real settlement promoted (2026-08-21)
 
 `hasson-v-comcast-2023-data-breach` — the Comcast/Xfinity 2023 data breach
