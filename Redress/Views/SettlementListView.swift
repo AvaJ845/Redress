@@ -19,8 +19,12 @@ struct SettlementListView: View {
                     SettlementRow(settlement: settlement, isTracking: trackedSettlementIDs.contains(settlement.id))
                 }
                 .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
             }
             .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Open Settlements")
             .overlay {
                 if settlements.isEmpty {
@@ -45,42 +49,42 @@ private struct SettlementRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(settlement.title)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                Spacer()
-                if isTracking {
-                    Label("Tracking", systemImage: "checkmark.circle.fill")
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(.green)
-                        .labelStyle(.iconOnly)
-                        .accessibilityLabel("Tracking")
+        Card {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(settlement.title)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    if isTracking {
+                        Label("Tracking", systemImage: "checkmark.circle.fill")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.green)
+                            .labelStyle(.iconOnly)
+                            .accessibilityLabel("Tracking")
+                    }
                 }
-            }
 
-            Text(settlement.brand)
-                .font(.subheadline)
+                Text(settlement.brand)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                if !settlement.payoutText.isEmpty {
+                    Label(settlement.payoutText, systemImage: "dollarsign.circle.fill")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(Color.accentColor)
+                        .lineLimit(2)
+                }
+
+                HStack(spacing: 4) {
+                    Image(systemName: "calendar")
+                    Text(settlement.claimDeadline.formatted(date: .abbreviated, time: .omitted))
+                    Text("·")
+                    Text(daysRemaining > 0 ? "\(daysRemaining) days left" : "closing soon")
+                }
+                .font(.caption)
                 .foregroundStyle(.secondary)
-
-            if !settlement.payoutText.isEmpty {
-                Label(settlement.payoutText, systemImage: "dollarsign.circle.fill")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(Color.accentColor)
-                    .lineLimit(2)
             }
-
-            HStack(spacing: 4) {
-                Image(systemName: "calendar")
-                Text(settlement.claimDeadline.formatted(date: .abbreviated, time: .omitted))
-                Text("·")
-                Text(daysRemaining > 0 ? "\(daysRemaining) days left" : "closing soon")
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
         }
-        .padding(14)
-        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 14))
     }
 }

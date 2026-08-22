@@ -7,6 +7,7 @@ struct SettingsView: View {
     @Query private var claims: [Claim]
     @State private var showingPaywall = false
     @State private var showingDeleteConfirmation = false
+    @AppStorage("redress.appearance") private var appearance: AppAppearance = .system
 
     private var totalRecovered: Double {
         claims.filter { $0.status == .paid }.compactMap(\.actualPayout).reduce(0, +)
@@ -46,6 +47,21 @@ struct SettingsView: View {
                             }
                         }
                     }
+                }
+
+                Section {
+                    Picker(selection: $appearance) {
+                        ForEach(AppAppearance.allCases) { option in
+                            Text(option.title).tag(option)
+                        }
+                    } label: {
+                        Label("Appearance", systemImage: "circle.lefthalf.filled")
+                    }
+                    .pickerStyle(.menu)
+                } header: {
+                    Text("Appearance")
+                } footer: {
+                    Text("System follows your iPhone's Light/Dark setting. Light or Dark override it just for Redress.")
                 }
 
                 Section("Privacy") {

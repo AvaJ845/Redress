@@ -10,11 +10,13 @@ struct RedressApp: App {
     }()
 
     @State private var subscriptions = SubscriptionManager()
+    @AppStorage("redress.appearance") private var appearance: AppAppearance = .system
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(subscriptions)
+                .preferredColorScheme(appearance.colorScheme)
         }
         .modelContainer(sharedModelContainer)
     }

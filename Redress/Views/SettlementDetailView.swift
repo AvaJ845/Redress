@@ -33,17 +33,14 @@ struct SettlementDetailView: View {
                     PayoutCallout(text: settlement.payoutText)
                 }
 
-                GroupBox("Eligibility") {
-                    Text(settlement.eligibilityCriteria)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                GroupBox("What you'll need") {
-                    Label(settlement.proofRequirement.summary, systemImage: "doc.text")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                GroupBox("Deadline") {
-                    Text(settlement.claimDeadline.formatted(date: .long, time: .omitted))
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                Card {
+                    VStack(alignment: .leading, spacing: 14) {
+                        detailRow(title: "Eligibility", systemImage: "person.fill.checkmark", text: settlement.eligibilityCriteria)
+                        Divider()
+                        detailRow(title: "What you'll need", systemImage: "doc.text", text: settlement.proofRequirement.summary)
+                        Divider()
+                        detailRow(title: "Deadline", systemImage: "calendar", text: settlement.claimDeadline.formatted(date: .long, time: .omitted))
+                    }
                 }
 
                 Text(settlement.settlementDescription)
@@ -68,12 +65,27 @@ struct SettlementDetailView: View {
             }
             .padding()
         }
+        .background(Color(.systemGroupedBackground))
         .navigationTitle("Settlement")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingPaywall) {
             PaywallView(reason: "You're already tracking a claim on the free plan. Upgrade to track this one too.")
         }
         .sensoryFeedback(.success, trigger: claimJustStarted)
+    }
+
+    @ViewBuilder
+    private func detailRow(title: String, systemImage: String, text: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label(title, systemImage: systemImage)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func attemptStartClaim() {
@@ -108,10 +120,15 @@ private struct PayoutCallout: View {
                     .foregroundStyle(.secondary)
                 Text(text)
                     .font(.subheadline)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.accentColor.opacity(0.08))
+        )
+        .accessibilityElement(children: .combine)
     }
 }

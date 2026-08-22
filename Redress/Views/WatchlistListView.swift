@@ -13,23 +13,33 @@ struct WatchlistListView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
 
                 ForEach(cases, id: \.id) { watchlistCase in
                     NavigationLink {
                         WatchlistDetailView(watchlistCase: watchlistCase)
                     } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(watchlistCase.caseName).font(.headline)
-                            Text(watchlistCase.company)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            Text("Filed \(watchlistCase.dateFiled.formatted(date: .abbreviated, time: .omitted))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        Card {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(watchlistCase.caseName).font(.headline)
+                                Text(watchlistCase.company)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                Text("Filed \(watchlistCase.dateFiled.formatted(date: .abbreviated, time: .omitted))")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
+                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
                 }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Watching")
             .overlay {
                 if cases.isEmpty {
