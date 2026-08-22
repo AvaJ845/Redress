@@ -29,9 +29,25 @@ final class SettlementCatalogTests: XCTestCase {
         {"id":"\(id)","title":"\(title)","brand":"Test Brand","description":"desc",
         "eligibilityCriteria":"criteria","proofRequirement":"none",
         "administratorName":"Admin","administratorPortalURLString":"https://example.com",
-        "claimDeadline":"\(deadline)","isSampleData":false,
+        "claimDeadline":"\(deadline)","isSampleData":false,"payoutText":"",
         "sourceName":"Test Source","sourceURLString":null,"sourceDate":null}
         """
+    }
+
+    func testPayoutTextRoundTripsThroughSeeding() throws {
+        let json = """
+        {"id":"a","title":"First","brand":"Test Brand","description":"desc",
+        "eligibilityCriteria":"criteria","proofRequirement":"none",
+        "administratorName":"Admin","administratorPortalURLString":"https://example.com",
+        "claimDeadline":"2026-12-01T00:00:00Z","isSampleData":false,
+        "payoutText":"$50, no proof needed",
+        "sourceName":"Test Source","sourceURLString":null,"sourceDate":null}
+        """
+        let url = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(json)]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: url)
+
+        let result = try context.fetch(FetchDescriptor<Settlement>()).first
+        XCTAssertEqual(result?.payoutText, "$50, no proof needed")
     }
 
     func testFirstRunInsertsAllSettlements() throws {

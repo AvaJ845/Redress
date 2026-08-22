@@ -12,6 +12,7 @@ private struct SeedSettlementDTO: Codable {
     let administratorPortalURLString: String
     let claimDeadline: String
     let isSampleData: Bool
+    let payoutText: String
     let sourceName: String
     let sourceURLString: String?
     let sourceDate: String?
@@ -62,6 +63,7 @@ enum SettlementCatalog {
                 record.sourceURLString = dto.sourceURLString
                 record.sourceDate = sourceDate
                 record.isSampleData = dto.isSampleData
+                record.payoutText = dto.payoutText
             } else {
                 let settlement = Settlement(
                     id: dto.id,
@@ -74,6 +76,7 @@ enum SettlementCatalog {
                     administratorPortalURLString: dto.administratorPortalURLString,
                     claimDeadline: deadline,
                     isSampleData: dto.isSampleData,
+                    payoutText: dto.payoutText,
                     sourceName: dto.sourceName,
                     sourceURLString: dto.sourceURLString,
                     sourceDate: sourceDate

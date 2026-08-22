@@ -7,6 +7,7 @@ struct SettlementDetailView: View {
     @Environment(SubscriptionManager.self) private var subscriptions
     @Query private var claims: [Claim]
     @State private var showingPaywall = false
+    @State private var claimJustStarted = false
 
     private var existingClaim: Claim? {
         claims.first { $0.settlementID == settlement.id }
@@ -27,6 +28,10 @@ struct SettlementDetailView: View {
 
                 Text(settlement.title).font(.title2.bold())
                 Text(settlement.brand).foregroundStyle(.secondary)
+
+                if !settlement.payoutText.isEmpty {
+                    PayoutCallout(text: settlement.payoutText)
+                }
 
                 GroupBox("Eligibility") {
                     Text(settlement.eligibilityCriteria)
@@ -68,6 +73,7 @@ struct SettlementDetailView: View {
         .sheet(isPresented: $showingPaywall) {
             PaywallView(reason: "You're already tracking a claim on the free plan. Upgrade to track this one too.")
         }
+        .sensoryFeedback(.success, trigger: claimJustStarted)
     }
 
     private func attemptStartClaim() {
@@ -84,5 +90,28 @@ struct SettlementDetailView: View {
         context.insert(claim)
         context.saveOrLog()
         NotificationManager.scheduleDeadlineReminder(for: claim, settlement: settlement)
+        claimJustStarted.toggle()
+    }
+}
+
+private struct PayoutCallout: View {
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "dollarsign.circle.fill")
+                .font(.title3)
+                .foregroundStyle(Color.accentColor)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Potential payout")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(text)
+                    .font(.subheadline)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
     }
 }

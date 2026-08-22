@@ -1,5 +1,5 @@
 {
-  "seedVersion": 5,
+  "seedVersion": 6,
   "settlements": [
     {
       "id": "breckenridge-duloxetine-future-refund-program",
@@ -12,6 +12,7 @@
       "administratorPortalURLString": "https://www.breckenridgefuturerefundprogram.com",
       "claimDeadline": "2028-01-01T12:00:00Z",
       "isSampleData": false,
+      "payoutText": "Refund of your actual out-of-pocket cost for the returned recalled product — no fixed amount, no cap stated on the official site.",
       "sourceName": "Official settlement website, verified directly (not via aggregator)",
       "sourceURLString": "https://www.breckenridgefuturerefundprogram.com/important-dates-and-deadlines.aspx",
       "sourceDate": "2026-08-22T12:00:00Z"
@@ -27,6 +28,7 @@
       "administratorPortalURLString": "https://www.comcastbreachsettlement.com",
       "claimDeadline": "2026-09-14T23:59:59Z",
       "isSampleData": false,
+      "payoutText": "$50 with no proof needed, or documented losses plus up to $150 for lost time ($30/hr, up to 5 hrs) — both figures confirmed directly on the official FAQ, no cap stated beyond that.",
       "sourceName": "Official court-authorized settlement website, verified directly (not via aggregator)",
       "sourceURLString": "https://www.comcastbreachsettlement.com",
       "sourceDate": "2026-08-21T12:00:00Z"

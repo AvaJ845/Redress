@@ -14,6 +14,13 @@ final class Settlement {
     var claimDeadline: Date
     var isSampleData: Bool
 
+    /// Plain-language payout description, e.g. "$50 (no proof needed), or
+    /// documented losses + up to $150 for lost time." Every figure here
+    /// must trace to something directly verified on the official site —
+    /// never an aggregator's summary number. Empty string, not a guess,
+    /// when a program has no fixed or estimable amount.
+    var payoutText: String = ""
+
     /// Provenance — shown in the UI so a user can judge freshness/trust
     /// themselves rather than relying on hidden certainty. sourceName is
     /// e.g. "California Attorney General" or "Redress team (manually
@@ -47,6 +54,7 @@ final class Settlement {
         administratorPortalURLString: String,
         claimDeadline: Date,
         isSampleData: Bool,
+        payoutText: String = "",
         sourceName: String = "Unknown",
         sourceURLString: String? = nil,
         sourceDate: Date? = nil
@@ -61,6 +69,7 @@ final class Settlement {
         self.administratorPortalURLString = administratorPortalURLString
         self.claimDeadline = claimDeadline
         self.isSampleData = isSampleData
+        self.payoutText = payoutText
         self.sourceName = sourceName
         self.sourceURLString = sourceURLString
         self.sourceDate = sourceDate
