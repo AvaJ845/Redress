@@ -47,6 +47,7 @@ struct ClaimDetailView: View {
                     TextField("$0", value: estimatedPayoutBinding, format: .currency(code: "USD"))
                         .multilineTextAlignment(.trailing)
                         .keyboardType(.decimalPad)
+                        .accessibilityLabel("Estimated payout")
                 }
                 HStack {
                     Text("Actual")
@@ -54,6 +55,7 @@ struct ClaimDetailView: View {
                     TextField("$0", value: actualPayoutBinding, format: .currency(code: "USD"))
                         .multilineTextAlignment(.trailing)
                         .keyboardType(.decimalPad)
+                        .accessibilityLabel("Actual payout")
                 }
             }
 

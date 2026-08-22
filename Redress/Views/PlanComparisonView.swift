@@ -25,14 +25,36 @@ private let rows: [ComparisonRow] = [
 /// Built to make the paid tier's actual value legible at a glance, not
 /// to talk anyone into it — every row is something Plus genuinely does
 /// that Free doesn't, no padding rows for the sake of a longer list.
+///
+/// A fixed-width 3-column table only works at normal text sizes — at
+/// accessibility Dynamic Type sizes it clips. Switches to a fully
+/// vertical, per-plan layout when the user has an accessibility text
+/// size set, rather than clipping or truncating.
 struct PlanComparisonView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                AccessibilityComparisonList()
+            } else {
+                CompactComparisonTable()
+            }
+        }
+        .padding()
+        .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+private struct CompactComparisonTable: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
                 Text("").frame(maxWidth: .infinity, alignment: .leading)
-                Text("Free").font(.caption.weight(.semibold)).frame(width: 64)
-                Text("Plus").font(.caption.weight(.semibold)).foregroundStyle(.tint).frame(width: 64)
+                Text("Free").font(.caption.weight(.semibold)).frame(minWidth: 64)
+                Text("Plus").font(.caption.weight(.semibold)).foregroundStyle(.tint).frame(minWidth: 64)
             }
+            .accessibilityHidden(true)
             .padding(.bottom, 8)
 
             ForEach(rows) { row in
@@ -40,10 +62,10 @@ struct PlanComparisonView: View {
                     Text(row.label)
                         .font(.subheadline)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    columnCell(included: row.freeIncluded, text: row.free)
-                        .frame(width: 64)
-                    columnCell(included: row.plusIncluded, text: row.plus, tinted: true)
-                        .frame(width: 64)
+                    columnCell(included: row.freeIncluded, text: row.free, plan: "Free")
+                        .frame(minWidth: 64)
+                    columnCell(included: row.plusIncluded, text: row.plus, plan: "Plus", tinted: true)
+                        .frame(minWidth: 64)
                 }
                 .padding(.vertical, 8)
 
@@ -52,12 +74,10 @@ struct PlanComparisonView: View {
                 }
             }
         }
-        .padding()
-        .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
     }
 
     @ViewBuilder
-    private func columnCell(included: Bool, text: String, tinted: Bool = false) -> some View {
+    private func columnCell(included: Bool, text: String, plan: String, tinted: Bool = false) -> some View {
         VStack(spacing: 2) {
             Image(systemName: included ? "checkmark.circle.fill" : "minus.circle")
                 .foregroundStyle(included ? (tinted ? Color.accentColor : .green) : .secondary)
@@ -66,6 +86,40 @@ struct PlanComparisonView: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+        }
+        // One coherent VoiceOver announcement ("Plus: Unlimited") instead
+        // of the icon and text being read as two separate, unlabeled elements.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(plan): \(text)")
+    }
+}
+
+private struct AccessibilityComparisonList: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            planSection(title: "Free", tinted: false) { $0.free }
+            Divider()
+            planSection(title: "Plus", tinted: true) { $0.plus }
+        }
+    }
+
+    @ViewBuilder
+    private func planSection(title: String, tinted: Bool, value: @escaping (ComparisonRow) -> String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(tinted ? Color.accentColor : .primary)
+            ForEach(rows) { row in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(row.label)
+                        .font(.subheadline)
+                    Text(value(row))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(row.label): \(value(row))")
+            }
         }
     }
 }

@@ -10,6 +10,7 @@ struct SourceProvenanceView: View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "info.circle")
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 if let sourceURL = settlement.sourceURL {
                     Link(destination: sourceURL) {
