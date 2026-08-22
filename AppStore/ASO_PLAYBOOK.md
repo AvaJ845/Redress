@@ -20,10 +20,10 @@ is spent once, keyword-first, no repeats.
 - **Subtitle (≤30):** `Private claim deadline alerts` — all-new words vs.
   Name, and the one differentiator research found **zero** competitors
   leading with in their own App Store copy: on-device privacy.
-- **Keywords (≤100):** `money,refund,payout,compensation,lawsuit,consumer,eligibility,receipt,encrypted,class,action,docket` (**99/100, verified with `len()`, not eyeballed**)
+- **Keywords (≤100):** `money,refund,payout,compensation,lawsuit,consumer,eligibility,receipt,unclaimed,class,action,docket` (**99/100, verified with `len()`, not eyeballed**)
 - **Combinations harvested:** `settlement tracker`, `private claim`,
   `consumer refund`, `lawsuit payout`, `claim deadline alerts`, `class action`,
-  `court docket`.
+  `court docket`, `unclaimed money`.
 - **2026-08-20 audit correction:** an earlier pass of this file claimed the
   keywords field was at 91/100 and that `class action` had been "folded into
   the keyword field." Both were wrong — actual length was 79/100, and
@@ -82,6 +82,72 @@ is spent once, keyword-first, no repeats.
     promise. Don't invite the same scrutiny.
   - `class action` as a head-on Name phrase — folded into the keyword field
     instead of spent in the scarce 30-char Name slot.
+
+## 1b · Findability audit — real search results, not the theory (2026-08-22)
+
+The user's direct question: will the chosen keywords actually be *findable*
+by someone searching for this kind of app? Tested against Apple's real,
+live public search index (`itunes.apple.com/search`, unauthenticated,
+same content real App Store search draws from) instead of reasoning about
+it — 20+ real user-style queries, not the ~7 competitor names the original
+Naming Council check was built around.
+
+**The honest answer has two parts, and they point different directions:**
+
+1. **Mechanically, yes — the words are real, correctly formatted, and match
+   genuine query vocabulary.** Every word in the Keywords field returned
+   relevant results when queried directly. That part of the original audit
+   holds up.
+2. **Competitively, "findable" is not the same question as "will rank."**
+   This category is far more crowded than the original competitor list
+   (7 names) captured. Querying `class action settlement`, `class action`,
+   `get my money back`, `lawsuit payout`, and `claim my money` surfaces the
+   same small set of incumbents over and over, several with review counts
+   an unknown app cannot out-rank on launch day regardless of keyword-string
+   quality: **Settlemate: Claim Savings** (72,311 ratings, 4.80★) dominates
+   nearly every broad query tested; **PayMe - Claim Your Money** (35,421),
+   **Payout: Claim Class Actions** (11,087), and **Collect - Settlement
+   Finder** (3,456) round out the top tier. None of these three appeared
+   with their real scale in the original Naming Council pass. Apple's
+   ranking weighs install velocity and rating volume heavily — a perfect
+   keyword string on a zero-review app does not out-rank a 72K-rated
+   incumbent for the same shared term; it only guarantees the app is *in*
+   the index for that term, not *near the top* of it. This is a Momentum
+   problem (§4 below), not a Discovery problem, and no amount of keyword
+   tuning fixes it — only real reviews, over real time, do.
+   - **The one genuinely good news finding, confirmed rather than assumed:**
+     the Name's actual lead phrase, `Settlement Tracker`, tested as one of
+     the *least* crowded viable phrases in the category — only one real
+     contested competitor (`Claim Cash: Settlement Tracker`, 39 ratings;
+     see the 2026-08-22 Naming Fellows-Roast note above). The specific bet
+     this project made is a genuinely better angle than the high-volume
+     terms, confirmed by live query, not just reasoned inference.
+   - **A real, actionable gap found and fixed:** `unclaimed money` /
+     `unclaimed settlement` tested as real, on-topic, low-competition query
+     vocabulary (`Trace - Unclaimed Money Finder`, 5 ratings; `US Unclaimed
+     Money`, 1 rating — no dominant incumbent) that the Keywords field
+     wasn't targeting at all. Meanwhile `encrypted` — a word already in the
+     field — tested as pure dead weight: every real result for it was a
+     messaging/storage app (Signal, MEGA, Proton Mail) with 100K–1M+
+     ratings, the wrong audience entirely. Swapped one for the other at
+     identical character cost (9 chars each) — see `METADATA.md` for the
+     exact before/after. `receipt` and `docket` tested similarly weak
+     (dominated by cashback-scanning and unrelated docket/immunization
+     apps respectively) but weren't cut this pass — flagged here as the
+     next candidates if the field needs more room later.
+   - **A fast-moving-category signal, not a naming risk:** this same
+     research turned up several very recently launched competitors with
+     near-zero ratings (`Owed — Settlement Finder`, released 2026-07-30,
+     dev "Raj Kumar", unrelated to this project; `ClaimNow - Settlement
+     Claim`, released 2026-07-28; `TapClaim`, released 2026-07-13) — new
+     entrants are appearing roughly weekly. Worth knowing the field keeps
+     shifting under any keyword plan, not something to react to per-entrant.
+
+**Bottom line for the user's question:** the keywords will be found — that
+part is confirmed, not assumed. Whether Redress *surfaces* for the highest-
+volume shared terms depends on review velocity post-launch far more than
+on any further keyword tuning; the Momentum section (§4) is where that
+actually gets solved, not here.
 
 ## 2 · The Naming Council — final verdict
 
