@@ -13,3 +13,7 @@ Config/Signing.xcconfig
 
 # Data leads pending human review — never auto-published
 Tools/leads.json
+
+# Ingestion engine run-state (which pages have been checked, and when) —
+# local cache, not source data, and machine-specific until a CI cache exists
+Tools/ingest/.state/

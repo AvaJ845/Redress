@@ -31,6 +31,48 @@ is spent once, keyword-first, no repeats.
   That's the single highest-intent phrase in this whole category; leaving it
   out entirely, not just out of the Name, was a real findability defect, not
   a cosmetic one. Fixed above.
+- **2026-08-22 audit correction (Naming Fellows-Roast):** a fresh, adversarial
+  re-check — not a rubber stamp — of the two claims below found both
+  overstated against real, current App Store evidence:
+  1. The claim that `Settlement Tracker` was an "untouched" phrase was
+     **false**. A live, rated competitor — **Claim Cash: Settlement Tracker**
+     ([id6760473460](https://apps.apple.com/us/app/claim-cash-settlement-tracker/id6760473460),
+     developer Eversight, 4.5★/39 ratings, Finance category, subtitle "Class
+     Action Finder & Money") — already uses that exact two-word phrase as
+     its own Name's lead keywords, and pairs it with the even more visceral
+     word "Cash." The phrase is contested, not exclusive. It still earns its
+     place in the Name (better than most rivals' brand-first pattern), but
+     the earlier "untouched" framing overstated the finding and is corrected
+     here rather than left standing.
+  2. The Collision row's read of `Redress Pro` as merely "thematically
+     adjacent" undersold a real overlap: Redress Pro's actual subtitle is
+     **"Private crisis recovery kit"** — no accounts, no server uploads,
+     fully local, dispute-letter drafting — i.e. it already makes almost the
+     exact privacy-first/no-accounts positioning claim this project treats as
+     its own unclaimed differentiator (see Discovery section above, "the one
+     differentiator research found zero competitors leading with"). That
+     claim is not literally zero-competitor; it's zero-competitor *in the
+     class-action-settlement vertical specifically*. Worth stating precisely
+     instead of broadly.
+  - **Net verdict unchanged (still Approve, see below) but for a narrower
+    reason:** `Redress` remains clear of any exact bare-Name collision in
+    this vertical, and none of the three `Redress`-named apps found
+    (`Redress Pro`, plain `Redress App` — an African clothing marketplace,
+    2.5★, [id6760317256](https://apps.apple.com/ga/app/redress-app/id6760317256) —
+    and `ReDress: AI Virtual Try-On`) compete for the same search intent.
+    But ship this eyes-open: the word `Redress` itself is a five-letter
+    formal/legal noun with no everyday-speech precedent among the 6+
+    researched competitors (`Catch`, `Payout`, `Collect`, `Settlemate`,
+    `ClassyAction`, `Claim Cash` — every single one is a plain verb or
+    money-noun). It is legible once read, but costs a beat of
+    pronunciation/definition-parsing in a search-results glance that
+    "Catch" or "Payout" don't. The mitigating case, argued by the
+    Technology-Evangelism Fellow in the same roast: it's the only name in
+    the category that is *literally, precisely* what the product does
+    ("redress" = remedy for a wrong) rather than a generic money-word —
+    real brand-story material, conditional on the subtitle/onboarding doing
+    the definition-work in the first three seconds, which the current
+    subtitle (`Private claim deadline alerts`) does not yet do on its own.
 - **Deliberately excluded:**
   - `file` / `filing` — the app never files on your behalf, only deep-links
     to the official administrator portal. Claiming otherwise would
@@ -45,8 +87,8 @@ is spent once, keyword-first, no repeats.
 
 | Fellow | Lean | Key finding |
 |---|---|---|
-| **Discoverability** | Approve *(corrected)* | Name leads with `Settlement Tracker`, not the brand. Subtitle repeats zero Name words. Keywords field repeats nothing from Name/Subtitle, now genuinely at 99/100 after fixing a miscounted/missing-`class action` error (see audit note above). Leaning the Name into the untouched privacy angle rather than the saturated `class action`/`claim` fight is still the correct Indie-Battlefield call for the scarce 30-char slot — but that term now lives in Keywords instead of being dropped outright. **Caveat: "Popularity" here is inferred from competitor density (real, searched), not from actual Apple Search Ads / third-party keyword-volume data** — no such tool was queried. Treat the Indie-Battlefield placement as a reasoned bet, not a measured fact, until real search-volume data is checked post-launch. |
-| **Collision** | Approve | `Recoup` was a **hard reject** — live App Store app "Recoup: Refund Wasted Expenses" ([id1569903003](https://apps.apple.com/jm/app/recoup-refund-wasted-expenses/id1569903003)) from a developer account literally named "Recoup" ([id1476990545](https://apps.apple.com/kg/developer/recoup/id1476990545)), doing near-identical work. `Claimly` was also a **hard reject** — multiple live class-action apps already use it exactly (`Claimly: Class Actions` [id6755642219](https://apps.apple.com/us/app/claimly-class-actions/id6755642219), `Claimly: Easy Claim Settlement` [id6755294155](https://apps.apple.com/us/app/claimly-easy-claim-settlement/id6755294155)). `Redress` is clear of exact matches — nearest neighbors are `ReDress: AI Virtual Try-On` (fashion, unrelated), a sustainability `Redress App` (unrelated), and `Redress Pro` (identity-theft/personal-crisis recovery — thematically adjacent "made whole after harm," but a different vertical and no name overlap with our full Name `Settlement Tracker - Redress`). Worth a periodic re-check as Redress Pro grows, nothing more. |
+| **Discoverability** | Approve *(corrected 2026-08-22)* | Name leads with `Settlement Tracker`, not the brand. Subtitle repeats zero Name words. Keywords field repeats nothing from Name/Subtitle, now genuinely at 99/100 after fixing a miscounted/missing-`class action` error (see audit note above). **`Settlement Tracker` is confirmed CONTESTED, not untouched** — live competitor Claim Cash: Settlement Tracker (4.5★/39 ratings) uses the identical phrase (see 2026-08-22 audit note) — it still earns the lead-phrase slot on Indie-Battlefield logic (better to fight a two-app field than the six-plus-app `class action`/`claim` field) but the earlier "untouched" framing was wrong and is retracted. **Caveat unchanged:** "Popularity" is inferred from competitor density, not measured Apple Search Ads volume data. |
+| **Collision** | Approve *(narrowed 2026-08-22)* | `Recoup` was a **hard reject** — live App Store app "Recoup: Refund Wasted Expenses" ([id1569903003](https://apps.apple.com/jm/app/recoup-refund-wasted-expenses/id1569903003)) from a developer account literally named "Recoup" ([id1476990545](https://apps.apple.com/kg/developer/recoup/id1476990545)), doing near-identical work. `Claimly` was also a **hard reject** — multiple live class-action apps already use it exactly (`Claimly: Class Actions` [id6755642219](https://apps.apple.com/us/app/claimly-class-actions/id6755642219), `Claimly: Easy Claim Settlement` [id6755294155](https://apps.apple.com/us/app/claimly-easy-claim-settlement/id6755294155)). `Redress` is clear of any exact **Name-string** collision in this vertical — nearest neighbors are `ReDress: AI Virtual Try-On` (fashion, unrelated), a peer-to-peer `Redress App` (African clothing marketplace, 2.5★, unrelated), and `Redress Pro` (privacy-first crisis-recovery kit — **positioning overlap confirmed real, not just "thematically adjacent"**, see 2026-08-22 audit note — but still a different vertical: incident/identity-crisis response, not consumer class-action refunds, and no Name-string overlap with our full Name `Settlement Tracker - Redress`). Worth a periodic re-check as Redress Pro grows, nothing more. |
 | **Portfolio** | **Approve** *(status change — see below)* | An earlier pass of this council rejected shipping this app at all, because AvaResearchLLC's other app, **Owed**, targeted the exact same category and the same keywords, including "owed" itself. **The user has since confirmed Owed is not shipping** — it's retired/reference-only. That removes the self-competition problem entirely. No other portfolio app (Top Pup, Decoder/Chunk Racer, Hummingbird, Kestrel) competes for this keyword space. Reference file `portfolio-namespaces.md` updated accordingly. |
 
 **VERDICT: Approve.** `Settlement Tracker - Redress` clears all three Fellows.

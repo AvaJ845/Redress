@@ -1,3 +1,7 @@
+import json
+import os
+import shutil
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -38,8 +42,15 @@ def fake_fetch(url):
 
 class VeritaSourceTests(unittest.TestCase):
 
+    def setUp(self):
+        self._tmpdir = tempfile.mkdtemp()
+        self.state_path = os.path.join(self._tmpdir, "verita_seen.json")
+
+    def tearDown(self):
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
+
     def test_finds_and_returns_only_open_cases(self):
-        source = VeritaSource()
+        source = VeritaSource(state_path=self.state_path)
         with patch("Tools.ingest.sources.verita._fetch", side_effect=fake_fetch), \
              patch("Tools.ingest.sources.verita.time.sleep"):
             candidates = source.fetch(query="", max_results=10)
@@ -48,7 +59,7 @@ class VeritaSourceTests(unittest.TestCase):
         self.assertEqual(candidates[0].source_id, "open-case-settlement")
 
     def test_open_case_is_tagged_ground_truth(self):
-        source = VeritaSource()
+        source = VeritaSource(state_path=self.state_path)
         with patch("Tools.ingest.sources.verita._fetch", side_effect=fake_fetch), \
              patch("Tools.ingest.sources.verita.time.sleep"):
             candidates = source.fetch(query="", max_results=10)
@@ -57,7 +68,7 @@ class VeritaSourceTests(unittest.TestCase):
         self.assertIn("15 Nov 2099", candidates[0].note)
 
     def test_closed_case_is_genuinely_excluded_not_just_deprioritized(self):
-        source = VeritaSource()
+        source = VeritaSource(state_path=self.state_path)
         with patch("Tools.ingest.sources.verita._fetch", side_effect=fake_fetch), \
              patch("Tools.ingest.sources.verita.time.sleep"):
             candidates = source.fetch(query="", max_results=10)
@@ -73,10 +84,69 @@ class VeritaSourceTests(unittest.TestCase):
                 </sitemapindex>"""
             raise AssertionError("should not fetch further if no settlement sitemap found")
 
-        source = VeritaSource()
+        source = VeritaSource(state_path=self.state_path)
         with patch("Tools.ingest.sources.verita._fetch", side_effect=fetch_without_settlement_sitemap):
             candidates = source.fetch(query="", max_results=10)
         self.assertEqual(candidates, [])
+
+    def test_unchecked_pages_are_prioritized_over_already_checked_ones(self):
+        # Pre-seed state as if two of the three pages were already checked
+        # in an earlier run, leaving only "open-case-settlement" unseen.
+        with open(self.state_path, "w") as f:
+            json.dump({
+                "https://veritaglobal.com/settlement-case/closed-case-settlement/":
+                    {"checked_at": "2026-01-01T00:00:00+00:00", "deadline": "01 Jan 2020"},
+                "https://veritaglobal.com/settlement-case/no-deadline-page/":
+                    {"checked_at": "2026-01-01T00:00:00+00:00", "deadline": None},
+            }, f)
+
+        fetch_log = []
+
+        def counting_fetch(url):
+            fetch_log.append(url)
+            return fake_fetch(url)
+
+        source = VeritaSource(state_path=self.state_path)
+        with patch("Tools.ingest.sources.verita._fetch", side_effect=counting_fetch), \
+             patch("Tools.ingest.sources.verita.time.sleep"):
+            candidates = source.fetch(query="", max_results=1)
+
+        page_fetches = [u for u in fetch_log if "/settlement-case/" in u]
+        self.assertEqual(
+            page_fetches,
+            ["https://veritaglobal.com/settlement-case/open-case-settlement/"],
+            "the one never-checked page should be fetched before either "
+            "already-checked page, and satisfying max_results=1 from the "
+            "unseen pool alone should mean the already-checked pages are "
+            "never re-fetched at all",
+        )
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0].source_id, "open-case-settlement")
+
+    def test_state_file_persists_between_source_instances(self):
+        source = VeritaSource(state_path=self.state_path)
+        with patch("Tools.ingest.sources.verita._fetch", side_effect=fake_fetch), \
+             patch("Tools.ingest.sources.verita.time.sleep"):
+            source.fetch(query="", max_results=10)
+
+        with open(self.state_path) as f:
+            state = json.load(f)
+
+        self.assertEqual(
+            set(state.keys()),
+            {
+                "https://veritaglobal.com/settlement-case/open-case-settlement/",
+                "https://veritaglobal.com/settlement-case/closed-case-settlement/",
+                "https://veritaglobal.com/settlement-case/no-deadline-page/",
+            },
+        )
+        self.assertEqual(
+            state["https://veritaglobal.com/settlement-case/open-case-settlement/"]["deadline"],
+            "15 Nov 2099",
+        )
+        self.assertIsNone(
+            state["https://veritaglobal.com/settlement-case/no-deadline-page/"]["deadline"]
+        )
 
 
 if __name__ == "__main__":

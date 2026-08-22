@@ -11,8 +11,24 @@ future) and a closed one (deadline already passed) render the same way,
 so "is the deadline in the future" is a real, honest signal — not proof
 of eligibility criteria or proof requirements, which still need human
 review before this becomes a real Settlement record.
+
+Coverage note (2026-08-22): an earlier version of this source drew a fresh
+random sample of MAX_PAGES_PER_RUN pages out of the full 531 on every run,
+with no memory between runs. That meant two problems: (1) no guarantee the
+full 531 was ever covered — each run had real, nonzero odds of resampling
+pages already known to be closed instead of the untouched remainder, and
+(2) wasted requests re-checking pages whose status was already known. This
+source now persists a small local state file (which URLs have been checked
+and when) and prioritizes never-checked pages first, so repeated runs make
+monotonic progress toward covering every real case instead of resampling
+blind — full coverage in ceil(531/40) ≈ 14 runs instead of a probabilistic
+approach that could stall well below 100% indefinitely. Once every page has
+been checked at least once, the source falls back to re-checking the
+oldest-checked pages, which doubles as a freshness re-verification pass.
 """
 
+import json
+import os
 import random
 import re
 import time
@@ -35,7 +51,12 @@ MAX_PAGES_PER_RUN = 40  # 531 total cases; the sitemap isn't ordered by recency
 # (confirmed 2026-08-21 — the first 15 alphabetically-ish-ordered entries were
 # all old, closed securities cases), so checking a fixed prefix each run
 # would systematically miss open cases scattered elsewhere in the list.
-# Random sampling each run finds them without needing persisted state.
+# Persisted per-URL state (below) is what actually guarantees full coverage
+# over repeated runs; random shuffling just decides the order within each
+# run's untouched pool.
+DEFAULT_STATE_PATH = os.path.join(
+    os.path.dirname(__file__), "..", ".state", "verita_seen.json"
+)
 
 
 def _fetch(url: str) -> str:
@@ -46,6 +67,21 @@ def _fetch(url: str) -> str:
 
 class VeritaSource(SettlementSource):
     name = "verita"
+
+    def __init__(self, state_path: Optional[str] = None):
+        self.state_path = state_path or DEFAULT_STATE_PATH
+
+    def _load_state(self) -> dict:
+        try:
+            with open(self.state_path) as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
+
+    def _save_state(self, state: dict) -> None:
+        os.makedirs(os.path.dirname(self.state_path), exist_ok=True)
+        with open(self.state_path, "w") as f:
+            json.dump(state, f, indent=2)
 
     def _find_settlement_sitemap_url(self) -> Optional[str]:
         index_xml = _fetch(SITEMAP_INDEX)
@@ -72,12 +108,27 @@ class VeritaSource(SettlementSource):
             return []
 
         case_urls = self._case_urls(sitemap_url)
-        random.shuffle(case_urls)
+        state = self._load_state()
+
+        # Never-checked pages first (shuffled, so a run that hits the
+        # MAX_PAGES_PER_RUN cap doesn't always take the same slice), then
+        # already-checked pages ordered oldest-first once every page has
+        # been seen at least once. This is what makes coverage of the full
+        # sitemap monotonic across runs instead of a random resample.
+        never_checked = [u for u in case_urls if u not in state]
+        random.shuffle(never_checked)
+        already_checked = sorted(
+            (u for u in case_urls if u in state),
+            key=lambda u: state[u].get("checked_at", ""),
+        )
+        ordered_urls = never_checked + already_checked
+
         candidates: List[Candidate] = []
         pages_checked = 0
         today = datetime.now(timezone.utc)
+        now_iso = today.isoformat()
 
-        for url in case_urls:
+        for url in ordered_urls:
             if len(candidates) >= max_results or pages_checked >= MAX_PAGES_PER_RUN:
                 break
             pages_checked += 1
@@ -91,12 +142,16 @@ class VeritaSource(SettlementSource):
 
             match = DEADLINE_PATTERN.search(html)
             if not match:
+                state[url] = {"checked_at": now_iso, "deadline": None}
                 continue
 
             try:
                 deadline = datetime.strptime(match.group(1), "%d %b %Y").replace(tzinfo=timezone.utc)
             except ValueError:
+                state[url] = {"checked_at": now_iso, "deadline": None}
                 continue
+
+            state[url] = {"checked_at": now_iso, "deadline": match.group(1)}
 
             if deadline <= today:
                 continue  # already closed, not a candidate
@@ -123,4 +178,5 @@ class VeritaSource(SettlementSource):
                 raw={"deadline_text": match.group(1)},
             ))
 
+        self._save_state(state)
         return candidates
