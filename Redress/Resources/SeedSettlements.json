@@ -1,6 +1,21 @@
 {
-  "seedVersion": 4,
+  "seedVersion": 5,
   "settlements": [
+    {
+      "id": "breckenridge-duloxetine-future-refund-program",
+      "title": "Breckenridge Duloxetine Future Refund Program",
+      "brand": "Breckenridge Pharmaceutical",
+      "description": "An ongoing refund program (not a fixed one-time settlement) for consumers who purchased Breckenridge duloxetine (generic Cymbalta) later subject to a product recall occurring after May 22, 2025. Unlike a typical proof-of-purchase claim, this program requires physically returning the unused, recalled medication in addition to filing a claim form — you'll receive a Return Authorization and prepaid shipping label by email after submitting your claim. Check the official site's recalled-lot list (Exhibit 1) to confirm your specific product is covered before filing.",
+      "eligibilityCriteria": "You purchased Breckenridge duloxetine that was recalled after May 22, 2025, and still have unused product to return. See the official recalled-lots list (Exhibit 1) on the settlement website to confirm your lot is covered.",
+      "proofRequirement": "strictProof",
+      "administratorName": "Verita (VeritaConnect Claims Administrator)",
+      "administratorPortalURLString": "https://www.breckenridgefuturerefundprogram.com",
+      "claimDeadline": "2028-01-01T12:00:00Z",
+      "isSampleData": false,
+      "sourceName": "Official settlement website, verified directly (not via aggregator)",
+      "sourceURLString": "https://www.breckenridgefuturerefundprogram.com/important-dates-and-deadlines.aspx",
+      "sourceDate": "2026-08-22T12:00:00Z"
+    },
     {
       "id": "hasson-v-comcast-2023-data-breach",
       "title": "Comcast (Xfinity) 2023 Data Breach Settlement",
