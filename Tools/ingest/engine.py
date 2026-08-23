@@ -7,6 +7,19 @@ a failure is logged and skipped, not fatal. Sources are combined and
 deduplicated into one leads file, each record carrying full provenance
 (which source(s) found it, and whether it's ground-truth or inferred).
 
+Leads accumulate across runs rather than being overwritten (fixed
+2026-08-23, found by a direct question, not by inspection catching it
+first: every run used to fully replace leads.json, so any real candidate
+a human hadn't gotten to yet — Amway, Toyota, anything from CourtListener,
+which is *always* needs-review by design — was silently destroyed the
+next time the engine ran. CourtListener's result set and RSS feeds'
+"most recent N" windows both change run to run, so nothing guaranteed a
+lead would ever be seen twice. See merge_leads() below: a candidate not
+re-found this run is kept, not dropped. The only way an entry should ever
+leave leads.json now is a human deleting it after actually reviewing it
+(promoted to a real Settlement, or confirmed not real) — never a side
+effect of running the engine again.
+
 Usage:
   python3 -m Tools.ingest.engine --query "class action settlement" --max-results 15
 """
@@ -17,6 +30,7 @@ import os
 import re
 import sys
 from dataclasses import asdict
+from datetime import datetime, timezone
 from typing import Dict, List
 
 from .sources.base import Candidate, SettlementSource
@@ -95,6 +109,34 @@ def _dedupe(candidates: List[Candidate]) -> List[Candidate]:
     return list(merged.values())
 
 
+def merge_leads(existing_records: List[dict], new_records: List[dict], now_iso: str) -> List[dict]:
+    """Accumulate leads across runs instead of overwriting.
+
+    A candidate not found again this run is kept as-is, not dropped — an
+    RSS feed's "most recent N" window and CourtListener's result ordering
+    both shift run to run, so a lead missing from today's fetch doesn't
+    mean it stopped being real, only that this run didn't happen to see
+    it again. Every record gets `first_seen_at` (set once, never
+    overwritten) and `last_seen_at` (bumped whenever the lead reappears),
+    so a human reviewing the backlog can tell a fresh find from one
+    that's been sitting unreviewed for a while.
+    """
+    by_key: Dict[str, dict] = {}
+    for record in existing_records:
+        key = _normalize_key(record.get("case_name", ""), record.get("docket_number") or "")
+        by_key[key] = record
+
+    for record in new_records:
+        key = _normalize_key(record.get("case_name", ""), record.get("docket_number") or "")
+        merged_record = dict(record)
+        existing = by_key.get(key)
+        merged_record["first_seen_at"] = existing.get("first_seen_at", now_iso) if existing else now_iso
+        merged_record["last_seen_at"] = now_iso
+        by_key[key] = merged_record
+
+    return list(by_key.values())
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--query", default="class action settlement")
@@ -105,20 +147,32 @@ def main() -> int:
 
     candidates = run(DEFAULT_SOURCES, args.query, args.max_results)
 
-    records = []
+    new_records = []
     for c in candidates:
         record = asdict(c)
         record["status"] = "lead-needs-review" if c.requires_human_review() else "lead-ground-truth"
         del record["raw"]  # keep the output file human-reviewable, not a data dump
-        records.append(record)
+        new_records.append(record)
 
     output_path = os.path.abspath(args.output)
-    with open(output_path, "w") as f:
-        json.dump(records, f, indent=2)
+    existing_records: List[dict] = []
+    if os.path.exists(output_path):
+        try:
+            with open(output_path) as f:
+                existing_records = json.load(f)
+        except (json.JSONDecodeError, OSError) as exc:
+            print(f"Couldn't read existing {output_path}, starting a fresh backlog: {exc}", file=sys.stderr)
 
-    ground_truth_count = sum(1 for r in records if r["status"] == "lead-ground-truth")
-    print(f"Wrote {len(records)} deduplicated leads to {output_path} "
-          f"({ground_truth_count} ground-truth, {len(records) - ground_truth_count} needs review).")
+    now_iso = datetime.now(timezone.utc).isoformat()
+    merged_records = merge_leads(existing_records, new_records, now_iso)
+
+    with open(output_path, "w") as f:
+        json.dump(merged_records, f, indent=2)
+
+    ground_truth_count = sum(1 for r in merged_records if r["status"] == "lead-ground-truth")
+    print(f"This run found {len(new_records)} leads. Backlog at {output_path} now has "
+          f"{len(merged_records)} total ({ground_truth_count} ground-truth, "
+          f"{len(merged_records) - ground_truth_count} needs review).")
     return 0
 
 
