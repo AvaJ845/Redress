@@ -5,9 +5,11 @@ SIZE = 1024
 img = Image.new("RGB", (SIZE, SIZE), (0, 0, 0))
 draw = ImageDraw.Draw(img)
 
-# Deep teal-to-navy gradient background (distinct from Kestrel's warm dusk gradient)
-top = (12, 74, 84)
-bottom = (8, 32, 56)
+# Deep Emerald to Ink gradient — matches the Deep Emerald + Warm Ivory
+# brand system (Theme.swift), replacing the earlier teal-to-navy version
+# which read as blue/fintech rather than the emerald brand signal.
+top = (11, 107, 80)    # Deep Emerald #0B6B50
+bottom = (23, 33, 29)  # Ink #17211D
 for y in range(SIZE):
     t = y / SIZE
     r = int(top[0] + (bottom[0] - top[0]) * t)
@@ -28,10 +30,10 @@ points = [
     (cx + w // 2, top_y + 60),
     (cx, top_y),
 ]
-draw.polygon(points, fill=(240, 246, 244))
+draw.polygon(points, fill=(250, 249, 245))  # Warm Ivory #FAF9F5
 
 # Checkmark inside the shield — claim resolved / made whole
-ck_color = (12, 74, 84)
+ck_color = (11, 107, 80)  # Deep Emerald #0B6B50
 lw = 46
 p1 = (cx - 130, cy + 10)
 p2 = (cx - 30, cy + 110)
