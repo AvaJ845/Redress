@@ -178,43 +178,27 @@ Ran the full engine live and audited every source's actual yield rather than ass
 2. **A real, fixable gap, found and fixed today: Verita's yield was capped by how sampling worked, not by how much real data exists.** The random-40-of-531-per-run approach (see the 2026-08-21 note above) had no memory between runs — every run resampled blind, with real odds of rechecking pages already known to be closed instead of covering new ground, so there was no guarantee the full 531 was ever seen. Fixed in [`sources/verita.py`](Tools/ingest/sources/verita.py): the source now persists per-page state (`Tools/ingest/.state/verita_seen.json`, gitignored — local run-state, not source data) and always checks never-before-seen pages first. Verified live, not just unit-tested: two consecutive runs against the real site checked 40 then a **different** 40 (80 distinct pages total, zero overlap, confirmed by reading the state file after each run) — coverage of all 531 real cases is now monotonic, reaching 100% in ~14 runs instead of drifting indefinitely. Once full coverage is reached, the same state file lets the source fall back to re-checking its oldest-checked pages, which doubles as a freshness pass on cases it already knows about.
 3. **State AG RSS returning 0 both times isn't a bug** — these are the two most recent items in each feed at the moment the engine runs, and most AG press releases (of any kind) aren't consumer-refund settlements. This is a low-hit-rate-by-nature source, not a broken one; only NY/TX/IL remain unwired, and only because no discoverable feed exists for them (checked directly, not guessed).
 
-## State unclaimed-property directory: built as an on-device link-out, not an ingestion source (2026-08-23)
+## State unclaimed-property directory: built, then reverted as out of scope (2026-08-23)
 
-The flagged future lead from the second-round review got a real follow-up
-rather than staying a note. The key finding: **this category doesn't fit
-the `SettlementSource`/`Candidate` ingestion model at all**, and building
-it that way would have been a category error, not just more engineering.
-A class-action settlement is a finite, browsable "open case" — Verita's
-531 case pages are exactly that shape. Unclaimed property is a per-person
-name search against a state's own records; there is no meaningful
-"list of open unclaimed-property matters" to discover or paginate through,
-and the closest thing to one (a state's bulk public-records file, where
-one exists) is raw third-party PII at government-registry scale — a
-fundamentally different, much more sensitive data-handling posture than
-anything else this app touches, and >99.9% irrelevant to any single user.
+The flagged future lead from the second-round review got a real follow-up:
+a live-verified directory of all 50 states + DC + 2 territories' official
+government unclaimed-property pages (sourced from NAUPA's own directory,
+never missingmoney.com or a guessed URL), shipped as a Settings screen
+deep-linking out to each state's real site.
 
-So instead: a real, verified state directory, built the same way as every
-data source in this document — checked live, not assumed. All 50 states +
-DC + 2 territories' official government unclaimed-property pages, sourced
-directly from NAUPA's own directory (`unclaimed.org`) — never
-missingmoney.com (blocked, see above) and never a guessed URL. Every one
-of the 53 shipped URLs was HTTP-checked live; 4 needed a second look:
-California and Indiana return 403 to a scripted request but were confirmed
-loading correctly in a real browser (normal WAF behavior against
-non-browser clients — irrelevant here since the app only ever opens these
-via `Link`, which hands off to the user's actual browser); Wyoming's listed
-URL was genuinely dead and replaced with its real current page, found by
-navigating the live site rather than guessing; the U.S. Virgin Islands had
-no working unclaimed-property page under its current government site
-structure at all and was left out rather than guessed.
-
-Shipped as [`Support/UnclaimedPropertyDirectory.swift`](Redress/Support/UnclaimedPropertyDirectory.swift)
-(a plain static list — no SwiftData model, no versioned seed/upsert
-machinery, because unlike Settlement/WatchlistCase there is no per-user
-state to preserve across updates) and [`Views/UnclaimedPropertyView.swift`](Redress/Views/UnclaimedPropertyView.swift),
-reachable from Settings. Same architecture discipline as the rest of the
-app: Redress deep-links to the real official site and searches nothing
-itself.
+**Reverted the same day, on explicit product-scope direction: Redress is
+for locating open class-action settlements, not unclaimed property.**
+Unclaimed property is a genuinely different problem (a per-person lookup
+against state records, not a settlement anyone can join) and belongs to a
+different product, not a Settings row bolted onto this one. The technical
+finding underneath still stands and is worth keeping on record in case
+scope ever changes deliberately: this category doesn't fit the
+`SettlementSource`/`Candidate` ingestion model at all (there's no
+browsable "open case" list the way Verita's 531 pages are one), and the
+closest bulk alternative (a state's public-records file) is raw
+third-party PII at a scale and sensitivity this app has never handled —
+so if this is ever revisited, it should stay a deliberate, separate
+product decision, not a quick add.
 
 ## What this means for Redress
 
