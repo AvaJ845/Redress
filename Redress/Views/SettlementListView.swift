@@ -132,6 +132,14 @@ private struct SettlementRow: View {
         Calendar.current.dateComponents([.day], from: Date(), to: settlement.claimDeadline).day ?? 0
     }
 
+    /// Icon + weight + color together, never color alone, matching the
+    /// same pairing rule ClaimStatusBadge already enforces elsewhere in
+    /// this app. A week is close enough to matter but not so wide that
+    /// most rows end up flagged.
+    private var isUrgent: Bool {
+        (0...7).contains(daysRemaining)
+    }
+
     var body: some View {
         Card {
             VStack(alignment: .leading, spacing: 10) {
@@ -161,13 +169,13 @@ private struct SettlementRow: View {
                 }
 
                 HStack(spacing: 4) {
-                    Image(systemName: "calendar")
+                    Image(systemName: isUrgent ? "exclamationmark.triangle.fill" : "calendar")
                     Text(settlement.claimDeadline.formatted(date: .abbreviated, time: .omitted))
                     Text("·")
                     Text(daysRemaining > 0 ? "\(daysRemaining) days left" : "closing soon")
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.caption.weight(isUrgent ? .semibold : .regular))
+                .foregroundStyle(isUrgent ? .orange : .secondary)
             }
         }
     }
