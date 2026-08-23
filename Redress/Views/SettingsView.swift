@@ -64,6 +64,18 @@ struct SettingsView: View {
                     Text("System follows your iPhone's Light/Dark setting. Light or Dark override it just for Redress.")
                 }
 
+                Section {
+                    NavigationLink {
+                        UnclaimedPropertyView()
+                    } label: {
+                        Label("Check unclaimed property by state", systemImage: "magnifyingglass")
+                    }
+                } header: {
+                    Text("More ways to find money")
+                } footer: {
+                    Text("Each state runs its own free official search — separate from class-action settlements. Redress just links you to the real site; it never searches on your behalf.")
+                }
+
                 Section("Privacy") {
                     Text(AppLegal.privacyPolicySummary)
                         .font(.footnote)

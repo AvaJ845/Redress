@@ -93,18 +93,25 @@ reusing the AG feeds' keyword filter rather than duplicating it.
   consumer claims process. Correctly abstaining from promoting that is
   the filter doing its job, not a false negative.
 
-**One new source found, deliberately NOT wired in — DOJ press-release RSS.**
-`https://www.justice.gov/news/rss?type=press_release&m=1` is real and live
-(200), but a live 20-item sample was dominated by criminal prosecutions
-(drug trafficking, fraud, terrorism) with real but rare consumer-
-settlement hits — one genuine $400M TikTok/ByteDance children's-privacy
-settlement appeared once. Wiring this in with the existing keyword filter
-unmodified risks reproducing the exact false-positive pattern already
-found and fixed for the AG feeds, since "restitution" appears constantly
-in ordinary criminal-sentencing coverage that has nothing to do with a
-consumer settlement. Documented in the source file's docstring as a real
-candidate that needs its own filter-tuning pass, live-tested, before it
-ships — not forgotten, not blindly copy-pasted in either.
+**DOJ press-release RSS — investigated further (2026-08-23), downgraded from
+"needs tuning" to confirmed not usable, same reasoning as SEC.** The
+initial read was that this just needed a DOJ-specific keyword filter
+before shipping. Following through on that — reading the actual content of
+the one item that looked most promising, not just its headline — changed
+the conclusion. "Justice Department Secures $400M Settlement with TikTok
+and ByteDance to Resolve Children's Privacy Litigation" reads exactly like
+a consumer win. Its full description says otherwise: "TikTok will pay $300
+million immediately and an additional $100 million upon entry of an order
+vacating a prior consent decree" — a **civil penalty paid to the U.S.
+government**, with no individual consumer claims process at all, the same
+structural pattern SEC litigation releases were already confirmed to have
+(0/50 real matches, see above). No keyword filter, however well-tuned,
+can separate "consumer settlement" from "government penalty" when both
+use the word "settlement" identically — that distinction requires reading
+what the money actually does, which is exactly the human-judgment step
+this project has never tried to automate around. Not wired in. Joining
+SEC in the same category: real, live, structurally the wrong shape of
+data for this specific need.
 
 **Re-checked the known claims-administrator marketing sitemaps, found nothing new.**
 JND (`jndla.com`), Angeion (`angeiongroup.com`), Simpluris (`simpluris.com`),
@@ -146,7 +153,7 @@ lead — not investigated further this round.
 | **State AG press RSS — California & Florida** | **Usable, wired in** | `oag.ca.gov/news/feed` and `myfloridalegal.com/rss.xml` both confirmed real, live RSS (Florida requires a real browser `User-Agent`/`Accept` header or it 403s — not ToS evasion, just bot-detection that a normal script triggers by default). Official, ground-truth for *the announcement being real*. **Not** ground-truth for "a consumer claim form exists" — see the false-positive findings below. |
 | **State AG — New York, Texas, Illinois** | **Not usable** | Checked each state's press-release page directly; no discoverable RSS/feed link on any of the three. Not wired in — no guessed URLs. |
 | **CFPB newsroom RSS** | **Usable, wired in (2026-08-22)** | `consumerfinance.gov/about-us/newsroom/feed/` — federal agency, same ground-truth tier as state AG. 403s without an `Accept-Language` header specifically (isolated, not guessed); resolved, not bypassed — no CAPTCHA/JS challenge existed. Live-verified the filter correctly abstains from promoting a real-looking but under-specified settlement announcement (see second-round review above). |
-| **DOJ press-release RSS** | **Confirmed working, deliberately not wired in** | `justice.gov/news/rss?type=press_release` — real, live, but dominated by criminal-prosecution content; needs its own keyword-tuning pass before shipping, not a copy of the AG/CFPB filter. See second-round review above. |
+| **DOJ press-release RSS** | **Confirmed working, deliberately not wired in — same reasoning as SEC** | `justice.gov/news/rss?type=press_release` — real, live. Its best-looking hit (a $400M TikTok/ByteDance "settlement") turned out on inspection to be a civil penalty paid to the government, not consumer redress — structurally the same problem as SEC litigation releases, not a keyword-tuning problem. See second-round review above. |
 | **Claims administrator sitemaps** (JND, Angeion, A.B. Data, Simpluris, CPT Group) | **Not usable** | All have a `sitemap.xml` (re-checked 2026-08-22, CPT Group newly added to this check), but every one is a general marketing sitemap (blog posts, case-study pages, staff bios) — not a structured list of currently-active claims. Epiq's main domain and Rust Consulting have no sitemap/robots.txt at all (these firms typically run per-case microsites on separate domains instead). |
 | **missingmoney.com (NAUPA multi-state unclaimed property)** | **Not usable** | Homepage itself returns `HTTP 403` to a direct request — a real access control, not a missing-header quirk (unlike CFPB above); its `robots.txt` explicitly declares content-signal-based permissions. Same tier as the FTC finding: real and official, off-limits to this pipeline without bypassing an active block. Individual state unclaimed-property sites (50 of them) remain unchecked — flagged as a real, separate future category, not covered by this pass. |
 | **Verita Global (Kroll's post-rebrand site)** | **Usable, wired in** | `kccllc.com` fully redirects here post-rebrand — re-investigated under the new name and it's a real find: `veritaglobal.com/mt_settlement_case-sitemap.xml` is a dedicated WordPress post type, 531 real settlement-case pages confirmed 2026-08-21. Each page states its own claim deadline directly ("Claim deadline: DD Mon YYYY") — confirmed on multiple real pages, both a currently-open case (deadline months out) and an already-closed one (deadline passed), rendering the same way. This is **stronger ground truth than a press release** — Verita/Kroll *is* the administrator, not an announcer. Live engine run found a real open case (`Holley Securities Settlement`, deadline 19 Nov 2026) on the first try after fixing a sampling issue (see below). |
@@ -170,6 +177,44 @@ Ran the full engine live and audited every source's actual yield rather than ass
 1. **By design, most of what the engine finds can't be auto-published — this is the trust tradeoff working as intended, not a bug.** CourtListener's 15 results are real dockets, precision-filtered to settlement-stage language, but `confidence: inferred` always, permanently — a docket existing is never proof a claim window is open, so these can never skip human review no matter how the query is tuned. Same for AG RSS: `ground_truth` there means "the press release is authentic," not "a claim form exists." The only source producing a directly auto-usable "someone should look at this" ground-truth signal is Verita, because it's the actual administrator stating its own deadline. **The real bottleneck on how many settlements ship is human review time, not engine capacity** — this matches the Product/Momentum section of `ASO_PLAYBOOK.md`, which already flags "more real settlements faster" as the top expected review request.
 2. **A real, fixable gap, found and fixed today: Verita's yield was capped by how sampling worked, not by how much real data exists.** The random-40-of-531-per-run approach (see the 2026-08-21 note above) had no memory between runs — every run resampled blind, with real odds of rechecking pages already known to be closed instead of covering new ground, so there was no guarantee the full 531 was ever seen. Fixed in [`sources/verita.py`](Tools/ingest/sources/verita.py): the source now persists per-page state (`Tools/ingest/.state/verita_seen.json`, gitignored — local run-state, not source data) and always checks never-before-seen pages first. Verified live, not just unit-tested: two consecutive runs against the real site checked 40 then a **different** 40 (80 distinct pages total, zero overlap, confirmed by reading the state file after each run) — coverage of all 531 real cases is now monotonic, reaching 100% in ~14 runs instead of drifting indefinitely. Once full coverage is reached, the same state file lets the source fall back to re-checking its oldest-checked pages, which doubles as a freshness pass on cases it already knows about.
 3. **State AG RSS returning 0 both times isn't a bug** — these are the two most recent items in each feed at the moment the engine runs, and most AG press releases (of any kind) aren't consumer-refund settlements. This is a low-hit-rate-by-nature source, not a broken one; only NY/TX/IL remain unwired, and only because no discoverable feed exists for them (checked directly, not guessed).
+
+## State unclaimed-property directory: built as an on-device link-out, not an ingestion source (2026-08-23)
+
+The flagged future lead from the second-round review got a real follow-up
+rather than staying a note. The key finding: **this category doesn't fit
+the `SettlementSource`/`Candidate` ingestion model at all**, and building
+it that way would have been a category error, not just more engineering.
+A class-action settlement is a finite, browsable "open case" — Verita's
+531 case pages are exactly that shape. Unclaimed property is a per-person
+name search against a state's own records; there is no meaningful
+"list of open unclaimed-property matters" to discover or paginate through,
+and the closest thing to one (a state's bulk public-records file, where
+one exists) is raw third-party PII at government-registry scale — a
+fundamentally different, much more sensitive data-handling posture than
+anything else this app touches, and >99.9% irrelevant to any single user.
+
+So instead: a real, verified state directory, built the same way as every
+data source in this document — checked live, not assumed. All 50 states +
+DC + 2 territories' official government unclaimed-property pages, sourced
+directly from NAUPA's own directory (`unclaimed.org`) — never
+missingmoney.com (blocked, see above) and never a guessed URL. Every one
+of the 53 shipped URLs was HTTP-checked live; 4 needed a second look:
+California and Indiana return 403 to a scripted request but were confirmed
+loading correctly in a real browser (normal WAF behavior against
+non-browser clients — irrelevant here since the app only ever opens these
+via `Link`, which hands off to the user's actual browser); Wyoming's listed
+URL was genuinely dead and replaced with its real current page, found by
+navigating the live site rather than guessing; the U.S. Virgin Islands had
+no working unclaimed-property page under its current government site
+structure at all and was left out rather than guessed.
+
+Shipped as [`Support/UnclaimedPropertyDirectory.swift`](Redress/Support/UnclaimedPropertyDirectory.swift)
+(a plain static list — no SwiftData model, no versioned seed/upsert
+machinery, because unlike Settlement/WatchlistCase there is no per-user
+state to preserve across updates) and [`Views/UnclaimedPropertyView.swift`](Redress/Views/UnclaimedPropertyView.swift),
+reachable from Settings. Same architecture discipline as the rest of the
+app: Redress deep-links to the real official site and searches nothing
+itself.
 
 ## What this means for Redress
 
