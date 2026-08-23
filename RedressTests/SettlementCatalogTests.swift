@@ -50,6 +50,33 @@ final class SettlementCatalogTests: XCTestCase {
         XCTAssertEqual(result?.payoutText, "$50, no proof needed")
     }
 
+    func testIsFullyVerifiedDefaultsToTrueWhenAbsentFromSeedJSON() throws {
+        // seedRecord()'s fixture doesn't include isFullyVerified at all —
+        // every settlement seeded before this field existed must still
+        // come through fully verified, not silently downgraded.
+        let url = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(seedRecord(id: "a", title: "First"))]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: url)
+
+        let result = try context.fetch(FetchDescriptor<Settlement>()).first
+        XCTAssertEqual(result?.isFullyVerified, true)
+    }
+
+    func testIsFullyVerifiedFalseRoundTripsThroughSeeding() throws {
+        let json = """
+        {"id":"a","title":"First","brand":"Test Brand","description":"desc",
+        "eligibilityCriteria":"criteria","proofRequirement":"none",
+        "administratorName":"Admin","administratorPortalURLString":"",
+        "claimDeadline":"2026-12-01T00:00:00Z","isSampleData":false,
+        "payoutText":"","sourceName":"Test Source","sourceURLString":null,
+        "sourceDate":null,"isFullyVerified":false}
+        """
+        let url = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(json)]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: url)
+
+        let result = try context.fetch(FetchDescriptor<Settlement>()).first
+        XCTAssertEqual(result?.isFullyVerified, false)
+    }
+
     func testFirstRunInsertsAllSettlements() throws {
         let url = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(seedRecord(id: "a", title: "First"))]}"#)
         SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: url)

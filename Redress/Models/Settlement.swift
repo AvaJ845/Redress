@@ -14,6 +14,20 @@ final class Settlement {
     var claimDeadline: Date
     var isSampleData: Bool
 
+    /// True for the app's original, strict tier: a human independently
+    /// verified eligibility, proof requirements, and a real claim-form
+    /// URL directly on the official site before this record ever shipped.
+    /// False marks a second, explicitly looser tier — the settlement's
+    /// *existence* and deadline are confirmed directly by a ground-truth
+    /// source (the administrator's own case page, a court, or an agency),
+    /// but eligibility/proof/claim-URL haven't been independently
+    /// reviewed yet. The UI must never show a "Start Claim" action for a
+    /// `false` record — the loosened bar is about surfacing more real,
+    /// confirmed-to-exist settlements sooner, never about letting a user
+    /// act on unverified specifics. Defaults true so every record from
+    /// before this field existed is unaffected.
+    var isFullyVerified: Bool = true
+
     /// Plain-language payout description, e.g. "$50 (no proof needed), or
     /// documented losses + up to $150 for lost time." Every figure here
     /// must trace to something directly verified on the official site —
@@ -57,7 +71,8 @@ final class Settlement {
         payoutText: String = "",
         sourceName: String = "Unknown",
         sourceURLString: String? = nil,
-        sourceDate: Date? = nil
+        sourceDate: Date? = nil,
+        isFullyVerified: Bool = true
     ) {
         self.id = id
         self.title = title
@@ -73,5 +88,6 @@ final class Settlement {
         self.sourceName = sourceName
         self.sourceURLString = sourceURLString
         self.sourceDate = sourceDate
+        self.isFullyVerified = isFullyVerified
     }
 }

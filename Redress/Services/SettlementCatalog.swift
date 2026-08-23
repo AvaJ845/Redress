@@ -16,6 +16,10 @@ private struct SeedSettlementDTO: Codable {
     let sourceName: String
     let sourceURLString: String?
     let sourceDate: String?
+    /// Optional (not required in the JSON) and defaults to true when
+    /// absent — matches Settlement's own default, so existing seed
+    /// entries never need editing just because this field was added.
+    let isFullyVerified: Bool?
 }
 
 private struct SeedFile: Codable {
@@ -70,6 +74,7 @@ enum SettlementCatalog {
                 record.sourceDate = sourceDate
                 record.isSampleData = dto.isSampleData
                 record.payoutText = dto.payoutText
+                record.isFullyVerified = dto.isFullyVerified ?? true
 
                 if deadline != previousDeadline {
                     rescheduleRemindersForClaims(against: record, context: context, reschedule: rescheduleReminder)
@@ -89,7 +94,8 @@ enum SettlementCatalog {
                     payoutText: dto.payoutText,
                     sourceName: dto.sourceName,
                     sourceURLString: dto.sourceURLString,
-                    sourceDate: sourceDate
+                    sourceDate: sourceDate,
+                    isFullyVerified: dto.isFullyVerified ?? true
                 )
                 context.insert(settlement)
                 existingByID[dto.id] = settlement

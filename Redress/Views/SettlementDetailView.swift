@@ -26,6 +26,12 @@ struct SettlementDetailView: View {
                         .foregroundStyle(.orange)
                 }
 
+                if !settlement.isFullyVerified {
+                    Label("Pending review", systemImage: "clock.badge.questionmark")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.orange)
+                }
+
                 Text(settlement.title).font(.title2.bold())
                 Text(settlement.brand).foregroundStyle(.secondary)
 
@@ -33,12 +39,18 @@ struct SettlementDetailView: View {
                     PayoutCallout(text: settlement.payoutText)
                 }
 
-                Card {
-                    VStack(alignment: .leading, spacing: 14) {
-                        detailRow(title: "Eligibility", systemImage: "person.fill.checkmark", text: settlement.eligibilityCriteria)
-                        Divider()
-                        detailRow(title: "What you'll need", systemImage: "doc.text", text: settlement.proofRequirement.summary)
-                        Divider()
+                if settlement.isFullyVerified {
+                    Card {
+                        VStack(alignment: .leading, spacing: 14) {
+                            detailRow(title: "Eligibility", systemImage: "person.fill.checkmark", text: settlement.eligibilityCriteria)
+                            Divider()
+                            detailRow(title: "What you'll need", systemImage: "doc.text", text: settlement.proofRequirement.summary)
+                            Divider()
+                            detailRow(title: "Deadline", systemImage: "calendar", text: settlement.claimDeadline.formatted(date: .long, time: .omitted))
+                        }
+                    }
+                } else {
+                    Card {
                         detailRow(title: "Deadline", systemImage: "calendar", text: settlement.claimDeadline.formatted(date: .long, time: .omitted))
                     }
                 }
@@ -48,17 +60,29 @@ struct SettlementDetailView: View {
 
                 SourceProvenanceView(settlement: settlement)
 
-                Button {
-                    attemptStartClaim()
-                } label: {
-                    Label(existingClaim != nil ? "Claim started" : "Start Claim", systemImage: "checkmark.circle")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(existingClaim != nil)
+                if settlement.isFullyVerified {
+                    Button {
+                        attemptStartClaim()
+                    } label: {
+                        Label(existingClaim != nil ? "Claim started" : "Start Claim", systemImage: "checkmark.circle")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(existingClaim != nil)
 
-                if !subscriptions.isPlus {
-                    Text("Free plan tracks 1 claim at a time. Redress Plus tracks unlimited claims.")
+                    if !subscriptions.isPlus {
+                        Text("Free plan tracks 1 claim at a time. Redress Plus tracks unlimited claims.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } else if let sourceURL = settlement.sourceURL {
+                    Link(destination: sourceURL) {
+                        Label("View official source", systemImage: "arrow.up.right.square")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Text("This settlement's existence and deadline are confirmed directly by the administrator, but Redress hasn't independently verified eligibility, proof requirements, or a claim link yet — there's nothing to start here until that review happens. Check the official source above for the latest details.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

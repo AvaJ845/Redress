@@ -161,6 +161,12 @@ private struct SettlementRow: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
+                if !settlement.isFullyVerified {
+                    Label("Pending review", systemImage: "clock.badge.questionmark")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.orange)
+                }
+
                 if !settlement.payoutText.isEmpty {
                     Label(settlement.payoutText, systemImage: "dollarsign.circle.fill")
                         .font(.subheadline.weight(.medium))
