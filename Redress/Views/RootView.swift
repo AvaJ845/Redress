@@ -1,24 +1,24 @@
 import SwiftUI
 
 enum RootSection: String, CaseIterable, Identifiable {
-    case settlements, watching, claims, account
+    case home, claims, discover, account
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .settlements: return "Settlements"
-        case .watching: return "Watching"
-        case .claims: return "My Claims"
-        case .account: return "Account"
+        case .home: return "Home"
+        case .claims: return "Claims"
+        case .discover: return "Discover"
+        case .account: return "Profile"
         }
     }
 
     var icon: String {
         switch self {
-        case .settlements: return "magnifyingglass"
-        case .watching: return "eye"
+        case .home: return "house"
         case .claims: return "checklist"
+        case .discover: return "magnifyingglass"
         case .account: return "person.circle"
         }
     }
@@ -42,27 +42,31 @@ struct RootView: View {
     }
 }
 
-/// iPhone / compact width — a bottom tab bar, per HIG guidance for a small
-/// number of top-level sections on a compact-width device.
+/// iPhone / compact width — a bottom tab bar with just the three things
+/// that are actually the product. Profile/Settings lives behind a
+/// toolbar icon on each tab instead of taking a fourth slot: it isn't
+/// "the product," so it shouldn't get equal billing with Home, Claims,
+/// and Discover in the one piece of chrome that's always on screen.
 private struct RootTabView: View {
     var body: some View {
         TabView {
-            SettlementListView()
-                .tabItem { Label(RootSection.settlements.title, systemImage: RootSection.settlements.icon) }
-            WatchlistListView()
-                .tabItem { Label(RootSection.watching.title, systemImage: RootSection.watching.icon) }
+            HomeView()
+                .tabItem { Label(RootSection.home.title, systemImage: RootSection.home.icon) }
             ClaimListView()
                 .tabItem { Label(RootSection.claims.title, systemImage: RootSection.claims.icon) }
-            SettingsView()
-                .tabItem { Label(RootSection.account.title, systemImage: RootSection.account.icon) }
+            DiscoverView()
+                .tabItem { Label(RootSection.discover.title, systemImage: RootSection.discover.icon) }
         }
     }
 }
 
-/// iPad / regular width — a sidebar, per HIG guidance that a bottom tab bar
-/// is an iPhone pattern, not an iPad one, for this many top-level sections.
+/// iPad / regular width — a sidebar, per HIG guidance that a bottom tab
+/// bar is an iPhone pattern, not an iPad one. Profile keeps its own
+/// sidebar row here since a sidebar isn't as space-constrained as a
+/// four-icon tab bar — the "stay out of the way" pressure that pushed
+/// Profile into a toolbar button on iPhone doesn't apply the same way.
 private struct RootSplitView: View {
-    @State private var selection: RootSection? = .settlements
+    @State private var selection: RootSection? = .home
 
     var body: some View {
         NavigationSplitView {
@@ -72,12 +76,12 @@ private struct RootSplitView: View {
             .navigationTitle("Redress")
         } detail: {
             switch selection {
-            case .settlements:
-                SettlementListView()
-            case .watching:
-                WatchlistListView()
+            case .home:
+                HomeView()
             case .claims:
                 ClaimListView()
+            case .discover:
+                DiscoverView()
             case .account:
                 SettingsView()
             case .none:

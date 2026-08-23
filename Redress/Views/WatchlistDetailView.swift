@@ -52,7 +52,7 @@ struct WatchlistDetailView: View {
             }
             .padding()
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Theme.pageBackground)
         .navigationTitle("Watching")
         .navigationBarTitleDisplayMode(.inline)
     }

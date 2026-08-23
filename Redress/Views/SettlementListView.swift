@@ -58,69 +58,66 @@ struct SettlementListView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            List {
-                if !settlements.isEmpty {
-                    Section {
-                        Text(summaryText)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
+        List {
+            if !settlements.isEmpty {
+                Section {
+                    Text(summaryText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+            }
 
-                ForEach(filteredSettlements, id: \.id) { settlement in
-                    NavigationLink {
-                        SettlementDetailView(settlement: settlement)
-                    } label: {
-                        SettlementRow(settlement: settlement, isTracking: trackedSettlementIDs.contains(settlement.id))
-                    }
-                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
+            ForEach(filteredSettlements, id: \.id) { settlement in
+                NavigationLink {
+                    SettlementDetailView(settlement: settlement)
+                } label: {
+                    SettlementRow(settlement: settlement, isTracking: trackedSettlementIDs.contains(settlement.id))
                 }
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle("Open Settlements")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Picker("Filter", selection: $filter) {
-                            ForEach(SettlementFilter.allCases) { option in
-                                Text(option.title).tag(option)
-                            }
-                        }
-                    } label: {
-                        Label(
-                            "Filter",
-                            systemImage: filter == .all
-                                ? "line.3.horizontal.decrease.circle"
-                                : "line.3.horizontal.decrease.circle.fill"
-                        )
-                    }
-                    .accessibilityLabel(filter == .all ? "Filter settlements" : "Filter settlements, \(filter.title) active")
-                }
-            }
-            .overlay {
-                if settlements.isEmpty {
-                    ContentUnavailableView(
-                        "No settlements yet",
-                        systemImage: "tray",
-                        description: Text("Real, verified settlements will appear here as they're reviewed.")
-                    )
-                } else if filteredSettlements.isEmpty {
-                    ContentUnavailableView(
-                        "No matches",
-                        systemImage: "line.3.horizontal.decrease.circle",
-                        description: Text("No open settlements match this filter right now.")
-                    )
-                }
-            }
-            .onAppear { SettlementCatalog.loadSeedIfNeeded(into: context) }
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Theme.pageBackground)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Picker("Filter", selection: $filter) {
+                        ForEach(SettlementFilter.allCases) { option in
+                            Text(option.title).tag(option)
+                        }
+                    }
+                } label: {
+                    Label(
+                        "Filter",
+                        systemImage: filter == .all
+                            ? "line.3.horizontal.decrease.circle"
+                            : "line.3.horizontal.decrease.circle.fill"
+                    )
+                }
+                .accessibilityLabel(filter == .all ? "Filter settlements" : "Filter settlements, \(filter.title) active")
+            }
+        }
+        .overlay {
+            if settlements.isEmpty {
+                ContentUnavailableView(
+                    "No settlements yet",
+                    systemImage: "tray",
+                    description: Text("Real, verified settlements will appear here as they're reviewed.")
+                )
+            } else if filteredSettlements.isEmpty {
+                ContentUnavailableView(
+                    "No matches",
+                    systemImage: "line.3.horizontal.decrease.circle",
+                    description: Text("No open settlements match this filter right now.")
+                )
+            }
+        }
+        .onAppear { SettlementCatalog.loadSeedIfNeeded(into: context) }
     }
 }
 

@@ -46,14 +46,15 @@ struct ClaimListView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle("My Claims")
+            .background(Theme.pageBackground)
+            .navigationTitle("Claims")
+            .profileToolbarButton()
             .overlay {
                 if claims.isEmpty {
                     ContentUnavailableView(
                         "No claims yet",
                         systemImage: "checklist",
-                        description: Text("Start a claim from the Settlements tab.")
+                        description: Text("Start a claim from Discover.")
                     )
                 }
             }

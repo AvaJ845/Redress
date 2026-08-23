@@ -89,7 +89,7 @@ struct SettlementDetailView: View {
             }
             .padding()
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Theme.pageBackground)
         .navigationTitle("Settlement")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingPaywall) {
@@ -130,6 +130,10 @@ struct SettlementDetailView: View {
     }
 }
 
+/// The one place Gold appears: this is the single most prominent "your
+/// money" moment on the screen, so it gets the rare, money-specific
+/// accent instead of the everyday brand color — kept deliberately scarce
+/// (see Theme.swift) rather than reused throughout the app.
 private struct PayoutCallout: View {
     let text: String
 
@@ -137,7 +141,7 @@ private struct PayoutCallout: View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "dollarsign.circle.fill")
                 .font(.title3)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Theme.gold)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Potential payout")
                     .font(.caption.weight(.semibold))
@@ -151,7 +155,7 @@ private struct PayoutCallout: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.accentColor.opacity(0.08))
+                .fill(Theme.gold.opacity(0.15))
         )
         .accessibilityElement(children: .combine)
     }
