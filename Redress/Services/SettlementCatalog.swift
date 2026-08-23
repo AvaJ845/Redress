@@ -40,7 +40,8 @@ enum SettlementCatalog {
     static func loadSeedIfNeeded(
         into context: ModelContext,
         seedFileURL: URL? = nil,
-        rescheduleReminder: (Claim, Settlement) -> Void = NotificationManager.scheduleDeadlineReminder
+        rescheduleReminder: (Claim, Settlement) -> Void = NotificationManager.scheduleDeadlineReminder,
+        notifyNewSettlements: ([Settlement]) -> Void = NotificationManager.notifyNewSettlements
     ) {
         let url = seedFileURL ?? Bundle.main.url(forResource: "SeedSettlements", withExtension: "json")
         guard let url, let data = try? Data(contentsOf: url) else { return }
@@ -49,9 +50,15 @@ enum SettlementCatalog {
         let appliedVersion = UserDefaults.standard.integer(forKey: appliedSeedVersionKey)
         guard seedFile.seedVersion > appliedVersion else { return }
 
+        // Never notify on the very first load ever — every settlement is
+        // "new" to a fresh install, and that's just the app having
+        // content, not a change worth interrupting someone about.
+        let isFirstEverLoad = appliedVersion == 0
+
         let formatter = ISO8601DateFormatter()
         let existing = (try? context.fetch(FetchDescriptor<Settlement>())) ?? []
         var existingByID = Dictionary(uniqueKeysWithValues: existing.map { ($0.id, $0) })
+        var newlyInserted: [Settlement] = []
 
         for dto in seedFile.settlements {
             let deadline = formatter.date(from: dto.claimDeadline) ?? Date()
@@ -99,6 +106,7 @@ enum SettlementCatalog {
                 )
                 context.insert(settlement)
                 existingByID[dto.id] = settlement
+                newlyInserted.append(settlement)
             }
         }
 
@@ -106,6 +114,10 @@ enum SettlementCatalog {
 
         context.saveOrLog()
         UserDefaults.standard.set(seedFile.seedVersion, forKey: appliedSeedVersionKey)
+
+        if !isFirstEverLoad && !newlyInserted.isEmpty {
+            notifyNewSettlements(newlyInserted)
+        }
     }
 
     /// A settlement dropped from the seed file (e.g. a sample record

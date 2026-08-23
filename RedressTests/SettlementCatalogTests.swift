@@ -213,4 +213,45 @@ final class SettlementCatalogTests: XCTestCase {
         XCTAssertEqual(results.count, 1, "must not delete a settlement a user has an active claim against")
         XCTAssertEqual(results.first?.id, "a")
     }
+
+    func testFirstEverLoadDoesNotNotify() throws {
+        // Every settlement is "new" on a fresh install — that's just the
+        // app having content, not a change worth interrupting anyone about.
+        let url = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(seedRecord(id: "a", title: "First"))]}"#)
+
+        var notifiedSettlements: [Settlement]?
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: url) { _, _ in } notifyNewSettlements: { settlements in
+            notifiedSettlements = settlements
+        }
+
+        XCTAssertNil(notifiedSettlements, "must not notify on the very first seed load")
+    }
+
+    func testSubsequentLoadNotifiesOnlyAboutGenuinelyNewSettlements() throws {
+        let v1 = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(seedRecord(id: "a", title: "First"))]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: v1)
+
+        var notifiedSettlements: [Settlement]?
+        let v2 = writeSeedFile(#"{"seedVersion":2,"settlements":[\#(seedRecord(id: "a", title: "First")),\#(seedRecord(id: "b", title: "Second"))]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: v2) { _, _ in } notifyNewSettlements: { settlements in
+            notifiedSettlements = settlements
+        }
+
+        XCTAssertEqual(notifiedSettlements?.count, 1, "only the genuinely new settlement should be notified about")
+        XCTAssertEqual(notifiedSettlements?.first?.id, "b")
+    }
+
+    func testSubsequentLoadWithNoNewSettlementsDoesNotNotify() throws {
+        let v1 = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(seedRecord(id: "a", title: "First"))]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: v1)
+
+        var notifiedSettlements: [Settlement]?
+        // v2 only corrects the title of the existing settlement — no new ones.
+        let v2 = writeSeedFile(#"{"seedVersion":2,"settlements":[\#(seedRecord(id: "a", title: "Corrected Title"))]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: v2) { _, _ in } notifyNewSettlements: { settlements in
+            notifiedSettlements = settlements
+        }
+
+        XCTAssertNil(notifiedSettlements, "an update with no new settlements must not notify")
+    }
 }
