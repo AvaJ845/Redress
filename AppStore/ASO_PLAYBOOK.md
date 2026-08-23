@@ -161,28 +161,36 @@ actually gets solved, not here.
 The bundle ID, project folder, and all in-app strings have been renamed from
 Recoup → Redress (`AvaResearchLLC.Redress`) and the project rebuilds clean.
 
-## 3 · Conversion — win the tap ✅ (icon + screenshots done, 2026-08-21)
+## 3 · Conversion — win the tap 🔄 (mid-refresh, 2026-08-23 — see below)
 
-- [x] **App icon** — shield + checkmark mark, teal-to-navy gradient,
-  generated programmatically (`Tools/make_icon.py`), legible at
-  home-screen size. Not a placeholder — real artwork, confirmed via
+- [x] **App icon** — shield + checkmark mark, **Deep Emerald → Ink
+  gradient, Warm Ivory shield, Deep Emerald checkmark** (regenerated
+  2026-08-23 from `Tools/make_icon.py` — the earlier teal-to-navy version
+  no longer matches the brand system). Real artwork, confirmed via
   Xcode's own iPad icon auto-generation from the single 1024 source.
-- [x] **Screenshots (6.9", 1320×2868 — verified exact, not eyeballed):**
-  six real captures in `AppStore/Screenshots/6.9-inch/`, real UI with real
-  data (the actual Comcast settlement, not sample content), no abstract
-  art:
-  1. `01_settlements.png` — Open Settlements hero
-  2. `02_settlement_detail.png` — eligibility/proof/deadline + source
-     provenance line ("per official settlement website, Aug 20 2026")
-  3. `03_claim_detail.png` — status picker, payout tracking, notes,
-     document vault (locked on Free), live deep-link to the real Kroll
-     portal
-  4. `04_myclaims.png` — claim list with the live status badge
-  5. `05_account_privacy.png` — the privacy pledge as the trust beat
-  6. `06_paywall.png` — the Free-vs-Plus comparison table
-  Deviates from the originally suggested order (privacy pledge was
-  planned as frame 3) because capturing in actual navigation order,
-  through the real app, was more honest than staging a specific sequence.
+- [ ] **Screenshots (6.9", 1320×2868 — verified exact, not eyeballed):**
+  mid-refresh against the Home-first navigation redesign and Deep
+  Emerald + Warm Ivory brand system — the six captured 2026-08-21 no
+  longer reflect the current app (old 4-tab nav, old teal color, and
+  `01_settlements.png` is gone — Home is the new lead shot, not a
+  Settlements browse list). Status as of 2026-08-23:
+  1. [x] `01_home.png` — **new**, replaces the old settlements-list hero.
+     "Your money." + honest count-based summary + Deadlines/New
+     Settlements sections, Deep Emerald throughout.
+  2. [x] `02_settlement_detail.png` — refreshed in place. Gold payout
+     callout, emerald icons, same eligibility/proof/deadline/provenance
+     content as before.
+  3. [ ] `03_claim_detail.png` — blocked mid-capture by a simulator
+     input-delivery issue unrelated to the app (tap calls stopped
+     registering session-wide, not specific to any one button; confirmed
+     via 30/30 passing automated tests and this exact flow working
+     earlier the same session). Resume once simulator interaction is
+     reliable again.
+  4. [ ] `04_myclaims.png` → rename `04_claims.png` — needs the same
+     started claim as #3, same blocker.
+  5. [ ] `05_account_privacy.png` — not blocked, just not yet re-captured
+     against the new colors/Profile-as-toolbar-sheet presentation.
+  6. [ ] `06_paywall.png` — not blocked, not yet re-captured.
 - [ ] **(Optional) App Preview:** 15–20s of starting a claim → adding a
   document → the deep-link handoff to the official portal. Not done.
 - **Product-page A/B test (after launch):** hero screenshot order first —
