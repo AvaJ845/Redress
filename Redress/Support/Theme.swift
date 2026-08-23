@@ -27,6 +27,17 @@ enum Theme {
         })
     }
 
+    /// Ink (#17211D) for high-emphasis text on light backgrounds; system
+    /// label in dark mode. Keeps headlines from defaulting to pure black
+    /// against the warm ivory page background.
+    static var ink: Color {
+        Color(UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor.label
+                : UIColor(red: 0.090, green: 0.129, blue: 0.114, alpha: 1)
+        })
+    }
+
     /// White in light mode (cards sit a level above ivory); system
     /// secondary grouped background in dark mode.
     static var cardBackground: Color {
