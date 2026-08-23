@@ -21,6 +21,8 @@ from typing import Dict, List
 
 from .sources.base import Candidate, SettlementSource
 from .sources.courtlistener import CourtListenerSource
+from .sources.federal_agency_rss import FEEDS as FEDERAL_FEEDS
+from .sources.federal_agency_rss import FederalAgencyRSSSource
 from .sources.state_ag_rss import FEEDS as AG_FEEDS
 from .sources.state_ag_rss import StateAGRSSSource
 from .sources.verita import VeritaSource
@@ -31,6 +33,7 @@ from .sources.verita import VeritaSource
 DEFAULT_SOURCES: List[SettlementSource] = [
     CourtListenerSource(),
     *[StateAGRSSSource(state, url) for state, url in AG_FEEDS.items()],
+    *[FederalAgencyRSSSource(agency, url) for agency, url in FEDERAL_FEEDS.items()],
     VeritaSource(),
     # FTC: no usable feed found (real dashboard exists but is CAPTCHA-gated).
     # SEC litigation-releases RSS: confirmed working, but tested against 50

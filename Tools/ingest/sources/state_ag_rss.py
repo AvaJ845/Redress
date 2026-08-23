@@ -31,6 +31,12 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Accept": "application/rss+xml, application/xml, text/xml, */*",
+    # CFPB's feed (federal_agency_rss.py) 403s without this — confirmed
+    # 2026-08-22 that Accept-Language alone (no other header) is what's
+    # missing; same category as Florida AG needing a real Accept header,
+    # not bot-protection evasion. Shared here since both RSS sources reuse
+    # this HEADERS dict.
+    "Accept-Language": "en-US,en;q=0.9",
 }
 
 # Bare "settlement" is too broad on its own — a live run (2026-08-21) showed

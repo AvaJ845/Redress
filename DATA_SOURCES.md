@@ -56,6 +56,86 @@ through it, unlike the FTC CAPTCHA declined earlier in this research.
 
 **Bottom line: no free source hands you a ready "here are open, claimable settlements" feed — and this round confirmed there's a deeper reason than just "nobody built one."** Even a state Attorney General's own official press release, which *is* genuine ground truth that a settlement happened, doesn't reliably tell you whether there's a public consumer claim form — some settlements go straight to the state treasury with no individual claims process, and press releases use nearly identical language for "we won money for consumers" and "we filed a lawsuit hoping to." A live test run caught real false positives from exactly this ambiguity (see below). Human review isn't a workaround for missing infrastructure — it's structurally required by what this data actually is.
 
+## Second-round source review (2026-08-22): new candidates found, all live-verified
+
+A fresh pass looking specifically for more free, primary (never aggregator)
+sources beyond the four already wired in. Every claim below was tested
+live against the real site, not reasoned about — the same standard as
+every other entry in this document.
+
+**One new source added — CFPB newsroom RSS.** `https://www.consumerfinance.gov/about-us/newsroom/feed/`
+is real, free, government-published (the Consumer Financial Protection
+Bureau, a federal agency — same "ground_truth means the announcement is
+authentic, not that a claim form exists" tier as the state AG feeds).
+Wired in at [`sources/federal_agency_rss.py`](Tools/ingest/sources/federal_agency_rss.py),
+reusing the AG feeds' keyword filter rather than duplicating it.
+
+- **A real bug surfaced and fixed on the way in:** the feed returned
+  `HTTP 403` to this engine's requests even with the same User-Agent that
+  worked fine in manual `curl` testing. Isolated the exact cause rather
+  than guessing: adding a single `Accept-Language: en-US,en;q=0.9` header
+  resolved it completely — nothing else was needed. This is the same
+  category as Florida AG already needing "a real browser User-Agent +
+  Accept header or it 403s" (see below) — a WAF checking for a standard,
+  honest browser header, not a CAPTCHA or JS challenge. Not bot-protection
+  evasion by this project's own standard (see the FTC finding below);
+  added to the shared `HEADERS` dict in `state_ag_rss.py` since both
+  sources reuse it.
+- **Live-verified the filter is working correctly, not just present:** the
+  feed's current content includes a real, on-topic-sounding headline —
+  "CFPB Reaches Settlement with FirstCash, Inc. and Its Subsidiaries for
+  Military Lending Act Violations" — that the keyword filter correctly
+  did NOT match. Read the full item to find out why before assuming a
+  bug: it's dated July 2025 (over a year stale) and its description says
+  the parties "jointly filed a stipulated final judgment and proposed
+  order, which **if entered by the court**, would resolve the lawsuit" —
+  a legal settlement between CFPB and a company, with no stated individual
+  consumer claims process. Correctly abstaining from promoting that is
+  the filter doing its job, not a false negative.
+
+**One new source found, deliberately NOT wired in — DOJ press-release RSS.**
+`https://www.justice.gov/news/rss?type=press_release&m=1` is real and live
+(200), but a live 20-item sample was dominated by criminal prosecutions
+(drug trafficking, fraud, terrorism) with real but rare consumer-
+settlement hits — one genuine $400M TikTok/ByteDance children's-privacy
+settlement appeared once. Wiring this in with the existing keyword filter
+unmodified risks reproducing the exact false-positive pattern already
+found and fixed for the AG feeds, since "restitution" appears constantly
+in ordinary criminal-sentencing coverage that has nothing to do with a
+consumer settlement. Documented in the source file's docstring as a real
+candidate that needs its own filter-tuning pass, live-tested, before it
+ships — not forgotten, not blindly copy-pasted in either.
+
+**Re-checked the known claims-administrator marketing sitemaps, found nothing new.**
+JND (`jndla.com`), Angeion (`angeiongroup.com`), Simpluris (`simpluris.com`),
+Epiq (`epiqglobal.com`), and CPT Group (`cptgroup.com`, `404` on its own
+sitemap) were all re-probed this round, not just recalled from the earlier
+pass. All confirmed still marketing-only (blog posts, staff bios, career
+pages, events) — no per-case structured post type the way Verita has.
+Consistent with the earlier finding: these firms run individual settlements
+on separate per-case microsite domains, which a parent-domain sitemap
+check structurally cannot discover.
+
+**One new source checked and confirmed not usable — missingmoney.com
+(NAUPA's official multi-state unclaimed-property search).** The homepage
+itself returns `HTTP 403` to a direct, unauthenticated request — not a
+missing-header issue like CFPB above; its `robots.txt` explicitly declares
+content-signal-based access permissions or restrictions per use case. This
+is the same tier as the FTC finding: real, official, and off-limits to
+this pipeline without bypassing an active access control, which stays a
+hard line this project doesn't cross.
+
+**A category worth its own future pass, not claimed as covered here:**
+each U.S. state runs its own official unclaimed-property database (the
+same category missingmoney.com aggregates), and only the one multi-state
+aggregator was checked this round — the 50 individual state sites weren't.
+This is structurally a different category from class-action settlements
+(a state confirming *this specific person* has unclaimed funds on file,
+not "here's an open claims window anyone can apply to") and would need its
+own Candidate/Settlement shape to represent honestly, not a forced fit
+into the existing model. Flagged here as a real, promising, unstarted
+lead — not investigated further this round.
+
 ## Verdict per source
 
 | Source | Status | Notes |
@@ -65,7 +145,10 @@ through it, unlike the FTC CAPTCHA declined earlier in this research.
 | **SEC litigation-releases RSS** | **Confirmed working, deliberately not wired in** | `sec.gov/enforcement-litigation/litigation-releases/rss` — confirmed 2026-08-21 with a proper identifying `User-Agent` per SEC's own Fair Access policy (10 req/sec allowed; the earlier "rate limit" response was this environment's shared egress IP being generically throttled, not a real block). Real, live, 200. **But tested against 50 real current items with two keyword sets (generic consumer-restitution language, and SEC-specific "Fair Fund"/"harmed investors"/"disgorgement" vocabulary) — zero matches on both.** SEC litigation releases are enforcement actions against individuals/firms (fraud, insider trading, unregistered securities) — not consumer-facing settlements. Fair Fund investor-distribution notices, the SEC content that *would* be relevant, aren't published in this feed and no dedicated feed for them was found. Building an adapter for a source that tests at 0/50 real matches is worse than not building one — it's not wired in, on real evidence, not because it doesn't exist. |
 | **State AG press RSS — California & Florida** | **Usable, wired in** | `oag.ca.gov/news/feed` and `myfloridalegal.com/rss.xml` both confirmed real, live RSS (Florida requires a real browser `User-Agent`/`Accept` header or it 403s — not ToS evasion, just bot-detection that a normal script triggers by default). Official, ground-truth for *the announcement being real*. **Not** ground-truth for "a consumer claim form exists" — see the false-positive findings below. |
 | **State AG — New York, Texas, Illinois** | **Not usable** | Checked each state's press-release page directly; no discoverable RSS/feed link on any of the three. Not wired in — no guessed URLs. |
-| **Claims administrator sitemaps** (JND, Angeion, A.B. Data, Simpluris) | **Not usable** | All have a `sitemap.xml`, but every one is a general marketing sitemap (blog posts, case-study pages) — not a structured list of currently-active claims. Epiq and Rust Consulting's main domains have no sitemap/robots.txt at all (these firms typically run per-case microsites on separate domains instead). |
+| **CFPB newsroom RSS** | **Usable, wired in (2026-08-22)** | `consumerfinance.gov/about-us/newsroom/feed/` — federal agency, same ground-truth tier as state AG. 403s without an `Accept-Language` header specifically (isolated, not guessed); resolved, not bypassed — no CAPTCHA/JS challenge existed. Live-verified the filter correctly abstains from promoting a real-looking but under-specified settlement announcement (see second-round review above). |
+| **DOJ press-release RSS** | **Confirmed working, deliberately not wired in** | `justice.gov/news/rss?type=press_release` — real, live, but dominated by criminal-prosecution content; needs its own keyword-tuning pass before shipping, not a copy of the AG/CFPB filter. See second-round review above. |
+| **Claims administrator sitemaps** (JND, Angeion, A.B. Data, Simpluris, CPT Group) | **Not usable** | All have a `sitemap.xml` (re-checked 2026-08-22, CPT Group newly added to this check), but every one is a general marketing sitemap (blog posts, case-study pages, staff bios) — not a structured list of currently-active claims. Epiq's main domain and Rust Consulting have no sitemap/robots.txt at all (these firms typically run per-case microsites on separate domains instead). |
+| **missingmoney.com (NAUPA multi-state unclaimed property)** | **Not usable** | Homepage itself returns `HTTP 403` to a direct request — a real access control, not a missing-header quirk (unlike CFPB above); its `robots.txt` explicitly declares content-signal-based permissions. Same tier as the FTC finding: real and official, off-limits to this pipeline without bypassing an active block. Individual state unclaimed-property sites (50 of them) remain unchecked — flagged as a real, separate future category, not covered by this pass. |
 | **Verita Global (Kroll's post-rebrand site)** | **Usable, wired in** | `kccllc.com` fully redirects here post-rebrand — re-investigated under the new name and it's a real find: `veritaglobal.com/mt_settlement_case-sitemap.xml` is a dedicated WordPress post type, 531 real settlement-case pages confirmed 2026-08-21. Each page states its own claim deadline directly ("Claim deadline: DD Mon YYYY") — confirmed on multiple real pages, both a currently-open case (deadline months out) and an already-closed one (deadline passed), rendering the same way. This is **stronger ground truth than a press release** — Verita/Kroll *is* the administrator, not an announcer. Live engine run found a real open case (`Holley Securities Settlement`, deadline 19 Nov 2026) on the first try after fixing a sampling issue (see below). |
 | **NAAG Multistate Settlements DB, PACER** | Unchanged from round 1 | Scrape-only / paid, respectively — see prior notes. |
 
