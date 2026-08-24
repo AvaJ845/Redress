@@ -1,10 +1,6 @@
 # Redress — ASO Playbook
 
-Applying the $50K ASO Playbook's three-part engine to Redress (renamed from
-"Recoup," itself renamed from an initial "Owed" naming collision — see
-project memory for the history). As an unknown solo publisher, the whole game
-is **rank for terms people actually type**, then **convert the tap**, then
-**compound with reviews**.
+Applying ASO Playbook's three-part engine to Redress.
 
 ## 1 · Discovery — get found ✅ (built, in `METADATA.md`)
 
