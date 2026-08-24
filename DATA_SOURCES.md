@@ -200,6 +200,61 @@ third-party PII at a scale and sensitivity this app has never handled —
 so if this is ever revisited, it should stay a deliberate, separate
 product decision, not a quick add.
 
+## Third-round engine review (2026-08-23–24): a second opinion, checked before acting on it
+
+A follow-up review proposed nine improvements. Two of the nine were real
+and got built; one was checked against real evidence and corrected before
+touching any code, because it would have been wasted effort.
+
+**Correction, not adopted as proposed:** "add more administrator sitemaps
+(Epiq, JND, A.B. Data, Simpluris, CPT Group)" was proposed as the
+highest-yield next step. It's the same investigation already completed
+and documented above (2026-08-22 and 2026-08-23, checked twice, not
+once) — all five are confirmed marketing-only sitemaps with no per-case
+structured data. Re-attempting this would have spent real effort
+re-discovering an already-documented dead end.
+
+**Built #1 — Verita case names now use the real page title, not a
+slug-cased guess.** The same review proposed extracting eligibility
+criteria, proof requirements, and a portal URL from Verita pages too —
+checked against a real page first (`toyota-ic-forklift-...`) and found
+none of those exist there: the only outbound "portal" link on the page is
+`clientaccess.kccllc.com`, a generic login page identical across every
+case, not a real per-case claim form — extracting it as if it were one
+would have been a real false-precision risk, not an improvement. What
+*is* real and extractable: the `<title>` tag carries the correctly
+capitalized case name ("Toyota IC Forklift Class Action Settlement"),
+where the old slug-based approach mangled it to "Toyota Ic Forklift...".
+Fixed in [`sources/verita.py`](Tools/ingest/sources/verita.py); confirmed
+live against two brand-new candidates the same run ("CIBC Mutual Funds
+and Renaissance Mutual Funds Class Action", "Rockley Securities
+Settlement") — both correctly capitalized from real title tags.
+
+**Built #2 — CourtListener queries now bound by `dateFiled`.** Verified
+the real, documented syntax first (`dateFiled:[YYYY-MM-DD TO *]`, via
+CourtListener's own advanced-search docs) rather than guessing a
+parameter name. Live-tested before and after: narrows the match count
+from 15,228 to 222 docket, with the same top results returned either
+way — meaning this has **zero effect on today's default 15-result run**
+(the top results, sorted `dateFiled desc`, are already recent), and its
+real value is defense-in-depth against a future run with a larger
+`--max-results` eventually paginating into multi-year-old dead dockets.
+Documented as what it actually is: a safety margin, not a fix for a
+problem visible today.
+
+**Also added while touching these files:** `CourtListenerSource` had zero
+dedicated tests before this pass — now covered in
+[`tests/test_courtlistener.py`](Tools/ingest/tests/test_courtlistener.py).
+Full ingestion suite: 41/41 passing.
+
+**Deferred, not built this round** (real ideas, bigger scope, worth
+scoping deliberately rather than bundling in): cross-source
+corroboration with a real confidence-score field, a rules-based
+false-positive classifier that could safely unlock DOJ/SEC feeds,
+async/concurrent fetching, and per-source metrics/logging. None of these
+are urgent at the current lead volume (24 in the backlog); worth
+revisiting once the backlog itself is the bottleneck, not before.
+
 ## What this means for Redress
 
 1. **The engine is multi-source and resilient, for real** — see [`Tools/ingest/`](Tools/ingest/). `engine.py` runs CourtListener + California/Florida AG + Verita independently; one source failing is logged and skipped, not fatal — proven by `test_one_source_failing_does_not_break_the_run`, not just claimed. Adding a source is one class implementing `SettlementSource`.

@@ -46,6 +46,13 @@ HEADERS = {
 
 SITEMAP_INDEX = "https://veritaglobal.com/sitemap_index.xml"
 DEADLINE_PATTERN = re.compile(r"Claim deadline:\s*(\d{1,2}\s+\w+\s+\d{4})", re.IGNORECASE)
+# Verified live 2026-08-23 against a real case page: the <title> tag carries
+# the case name with correct capitalization ("Toyota IC Forklift Class
+# Action Settlement"), unlike deriving it from the URL slug, which
+# .title()-cases every word and mangles acronyms/abbreviations ("Ic" instead
+# of "IC", "V" instead of "v."). Falls back to the slug if the title tag is
+# ever missing, so this can't turn a real candidate into a dropped one.
+TITLE_PATTERN = re.compile(r"<title>(.*?)(?:\s*\|\s*Verita Global)?</title>", re.IGNORECASE | re.DOTALL)
 SECONDS_BETWEEN_REQUESTS = 2
 MAX_PAGES_PER_RUN = 40  # 531 total cases; the sitemap isn't ordered by recency
 # (confirmed 2026-08-21 — the first 15 alphabetically-ish-ordered entries were
@@ -157,7 +164,9 @@ class VeritaSource(SettlementSource):
                 continue  # already closed, not a candidate
 
             slug = url.rstrip("/").rsplit("/", 1)[-1]
-            case_name = slug.replace("-", " ").title()
+            title_match = TITLE_PATTERN.search(html)
+            case_name = title_match.group(1).strip() if title_match and title_match.group(1).strip() \
+                else slug.replace("-", " ").title()
 
             candidates.append(Candidate(
                 source_name=self.name,

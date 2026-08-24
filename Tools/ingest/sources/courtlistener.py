@@ -10,6 +10,7 @@ import os
 import time
 import urllib.parse
 import urllib.request
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from .base import Candidate, SettlementSource
@@ -17,6 +18,17 @@ from .base import Candidate, SettlementSource
 API_BASE = "https://www.courtlistener.com/api/rest/v4"
 MAX_REQUESTS_PER_RUN = 10  # stays conservative regardless of auth state
 SECONDS_BETWEEN_REQUESTS = 3
+# A docket filed years ago that never resolved is more likely dead than a
+# recent one — real, documented CourtListener syntax, verified 2026-08-23
+# against https://wiki.free.law/c/courtlistener/help/search/advanced-search-and-query-techniques
+# (not guessed): dateFiled:[YYYY-MM-DD TO *] for an open-ended "from this
+# date on" range, used the same way description:"final approval" already
+# is, directly in the q string. Confirmed live the same day this has zero
+# effect on today's default 15-result run (the top results, sorted
+# dateFiled desc, are already this recent) — its value is defense-in-depth
+# against a future run with a larger --max-results eventually paginating
+# into stale multi-year-old dockets, not a fix for a problem visible today.
+RECENCY_WINDOW_DAYS = 730  # ~24 months
 
 
 class CourtListenerSource(SettlementSource):
@@ -38,7 +50,8 @@ class CourtListenerSource(SettlementSource):
         # description field for settlement-stage language ("final approval")
         # narrows this to ~15K and returns genuinely recent, relevant cases —
         # still not proof a claim window is open, but a real precision gain.
-        precise_query = f'{query} AND description:"final approval"'
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=RECENCY_WINDOW_DAYS)).strftime("%Y-%m-%d")
+        precise_query = f'{query} AND description:"final approval" AND dateFiled:[{cutoff} TO *]'
         params = urllib.parse.urlencode({"q": precise_query, "type": "r", "order_by": "dateFiled desc"})
         url = f"{API_BASE}/search/?{params}"
 

@@ -148,6 +148,46 @@ class VeritaSourceTests(unittest.TestCase):
             state["https://veritaglobal.com/settlement-case/no-deadline-page/"]["deadline"]
         )
 
+    def test_case_name_uses_real_page_title_when_present(self):
+        # Regression test: deriving case_name from the URL slug mangles
+        # acronyms — "toyota-ic-forklift..." .title()-cases to "Toyota Ic
+        # Forklift...", not the real "Toyota IC Forklift..." the
+        # administrator's own <title> tag states. Confirmed live 2026-08-23
+        # against the real page.
+        titled_sitemap = """<?xml version="1.0" encoding="UTF-8"?>
+        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+          <url><loc>https://veritaglobal.com/settlement-case/toyota-ic-forklift-class-action-settlement/</loc></url>
+        </urlset>
+        """
+        titled_page = (
+            "<html><head><title>Toyota IC Forklift Class Action Settlement | Verita Global</title></head>"
+            "<body><p>Claim deadline: 22 Sep 2099</p></body></html>"
+        )
+
+        def fetch_with_title(url):
+            if "sitemap_index" in url:
+                return SITEMAP_INDEX
+            if "mt_settlement_case-sitemap" in url:
+                return titled_sitemap
+            return titled_page
+
+        source = VeritaSource(state_path=self.state_path)
+        with patch("Tools.ingest.sources.verita._fetch", side_effect=fetch_with_title), \
+             patch("Tools.ingest.sources.verita.time.sleep"):
+            candidates = source.fetch(query="", max_results=10)
+
+        self.assertEqual(candidates[0].case_name, "Toyota IC Forklift Class Action Settlement")
+
+    def test_case_name_falls_back_to_slug_when_title_tag_missing(self):
+        # Existing fixture pages have no <title> tag at all — confirms the
+        # fallback still works rather than dropping the candidate.
+        source = VeritaSource(state_path=self.state_path)
+        with patch("Tools.ingest.sources.verita._fetch", side_effect=fake_fetch), \
+             patch("Tools.ingest.sources.verita.time.sleep"):
+            candidates = source.fetch(query="", max_results=10)
+
+        self.assertEqual(candidates[0].case_name, "Open Case Settlement")
+
 
 if __name__ == "__main__":
     unittest.main()
