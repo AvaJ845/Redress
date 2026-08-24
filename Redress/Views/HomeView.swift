@@ -156,32 +156,44 @@ private struct HomeSettlementRow: View {
         Calendar.current.dateComponents([.day], from: Date(), to: settlement.claimDeadline).day ?? 0
     }
 
+    private var category: SettlementCategory {
+        SettlementCategory.classify(
+            title: settlement.title,
+            brand: settlement.brand,
+            description: settlement.settlementDescription
+        )
+    }
+
     var body: some View {
         Card {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(settlement.title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .multilineTextAlignment(.leading)
-                        .lineLimit(2)
-                    Spacer()
-                    if isTracking {
-                        Label("Tracking", systemImage: "checkmark.circle.fill")
-                            .font(.caption2.weight(.medium))
-                            .foregroundStyle(.green)
-                            .labelStyle(.iconOnly)
-                            .accessibilityLabel("Tracking")
+            HStack(alignment: .top, spacing: 12) {
+                CategoryIconBadge(category: category, size: 36)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(settlement.title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(2)
+                        Spacer()
+                        if isTracking {
+                            Label("Tracking", systemImage: "checkmark.circle.fill")
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(.green)
+                                .labelStyle(.iconOnly)
+                                .accessibilityLabel("Tracking")
+                        }
                     }
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                        Text(settlement.claimDeadline.formatted(date: .abbreviated, time: .omitted))
+                        Text("·")
+                        Text(daysRemaining > 0 ? "\(daysRemaining) days left" : "closing soon")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
-                HStack(spacing: 4) {
-                    Image(systemName: "calendar")
-                    Text(settlement.claimDeadline.formatted(date: .abbreviated, time: .omitted))
-                    Text("·")
-                    Text(daysRemaining > 0 ? "\(daysRemaining) days left" : "closing soon")
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
             }
         }
     }
@@ -190,15 +202,26 @@ private struct HomeSettlementRow: View {
 private struct HomeClaimRow: View {
     let claim: Claim
 
+    /// Only the settlement's title survives onto Claim (see Claim.swift) —
+    /// good enough for classification, since it's the same text signal
+    /// SettlementCategory already keys off first.
+    private var category: SettlementCategory {
+        SettlementCategory.classify(title: claim.settlementTitle, brand: "", description: "")
+    }
+
     var body: some View {
         Card {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(claim.settlementTitle)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(2)
-                ClaimStatusBadge(status: claim.status)
+            HStack(alignment: .top, spacing: 12) {
+                CategoryIconBadge(category: category, size: 36)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(claim.settlementTitle)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                    ClaimStatusBadge(status: claim.status)
+                }
             }
         }
     }

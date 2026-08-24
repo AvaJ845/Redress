@@ -137,48 +137,60 @@ private struct SettlementRow: View {
         (0...7).contains(daysRemaining)
     }
 
+    private var category: SettlementCategory {
+        SettlementCategory.classify(
+            title: settlement.title,
+            brand: settlement.brand,
+            description: settlement.settlementDescription
+        )
+    }
+
     var body: some View {
         Card {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(settlement.title)
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    if isTracking {
-                        Label("Tracking", systemImage: "checkmark.circle.fill")
-                            .font(.caption2.weight(.medium))
-                            .foregroundStyle(.green)
-                            .labelStyle(.iconOnly)
-                            .accessibilityLabel("Tracking")
+            HStack(alignment: .top, spacing: 12) {
+                CategoryIconBadge(category: category)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(settlement.title)
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        if isTracking {
+                            Label("Tracking", systemImage: "checkmark.circle.fill")
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(.green)
+                                .labelStyle(.iconOnly)
+                                .accessibilityLabel("Tracking")
+                        }
                     }
-                }
 
-                Text(settlement.brand)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    Text(settlement.brand)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
 
-                if !settlement.isFullyVerified {
-                    Label("Pending review", systemImage: "clock.badge.questionmark")
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(.orange)
-                }
+                    if !settlement.isFullyVerified {
+                        Label("Pending review", systemImage: "clock.badge.questionmark")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.orange)
+                    }
 
-                if !settlement.payoutText.isEmpty {
-                    Label(settlement.payoutText, systemImage: "dollarsign.circle.fill")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(Color.accentColor)
-                        .lineLimit(2)
-                }
+                    if !settlement.payoutText.isEmpty {
+                        Label(settlement.payoutText, systemImage: "dollarsign.circle.fill")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(Color.accentColor)
+                            .lineLimit(2)
+                    }
 
-                HStack(spacing: 4) {
-                    Image(systemName: isUrgent ? "exclamationmark.triangle.fill" : "calendar")
-                    Text(settlement.claimDeadline.formatted(date: .abbreviated, time: .omitted))
-                    Text("·")
-                    Text(daysRemaining > 0 ? "\(daysRemaining) days left" : "closing soon")
+                    HStack(spacing: 4) {
+                        Image(systemName: isUrgent ? "exclamationmark.triangle.fill" : "calendar")
+                        Text(settlement.claimDeadline.formatted(date: .abbreviated, time: .omitted))
+                        Text("·")
+                        Text(daysRemaining > 0 ? "\(daysRemaining) days left" : "closing soon")
+                    }
+                    .font(.caption.weight(isUrgent ? .semibold : .regular))
+                    .foregroundStyle(isUrgent ? .orange : .secondary)
                 }
-                .font(.caption.weight(isUrgent ? .semibold : .regular))
-                .foregroundStyle(isUrgent ? .orange : .secondary)
             }
         }
     }
