@@ -5,10 +5,12 @@ import StoreKit
 struct ClaimDetailView: View {
     @Bindable var claim: Claim
     @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
     @Environment(SubscriptionManager.self) private var subscriptions
     @Environment(\.requestReview) private var requestReview
     @State private var showingDocumentCapture = false
     @State private var showingPaywall = false
+    @State private var showingDeleteConfirmation = false
     @State private var settlement: Settlement?
     @State private var settlementLookupAttempted = false
 
@@ -85,7 +87,7 @@ struct ClaimDetailView: View {
                     .foregroundStyle(.secondary)
             }
 
-            if let settlement, let url = settlement.administratorPortalURL {
+            if let settlement, settlement.isFullyVerified, let url = settlement.administratorPortalURL {
                 Section("Submit") {
                     Link(destination: url) {
                         Label("Open official claim portal", systemImage: "arrow.up.right.square")
@@ -106,7 +108,7 @@ struct ClaimDetailView: View {
 
             Section {
                 Button(role: .destructive) {
-                    deleteClaim()
+                    showingDeleteConfirmation = true
                 } label: {
                     Label("Delete claim & documents", systemImage: "trash")
                 }
@@ -118,6 +120,14 @@ struct ClaimDetailView: View {
         }
         .sheet(isPresented: $showingPaywall) {
             PaywallView(reason: "The document vault is a Redress Plus feature.")
+        }
+        .confirmationDialog(
+            "Delete this claim and its documents? This can't be undone.",
+            isPresented: $showingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Claim", role: .destructive, action: deleteClaim)
+            Button("Cancel", role: .cancel) {}
         }
         .onAppear(perform: loadSettlement)
         .onChange(of: claim.status) { _, newValue in
@@ -150,5 +160,6 @@ struct ClaimDetailView: View {
         NotificationManager.cancelReminder(for: claim)
         context.delete(claim)
         context.saveOrLog()
+        dismiss()
     }
 }

@@ -41,7 +41,12 @@ enum WatchlistCatalog {
         let fileIDs = Set(file.cases.map(\.id))
 
         for dto in file.cases {
-            let dateFiled = formatter.date(from: dto.dateFiled) ?? Date()
+            // A malformed filing date must never silently become "today" —
+            // skip the record instead of showing a fabricated date.
+            guard let dateFiled = formatter.date(from: dto.dateFiled) else {
+                assertionFailure("WatchlistCases.json has an unparseable dateFiled for id \(dto.id)")
+                continue
+            }
             let sourceDate = dto.sourceDate.flatMap { formatter.date(from: $0) }
 
             if let record = existingByID[dto.id] {

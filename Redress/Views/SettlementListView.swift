@@ -30,8 +30,7 @@ private enum SettlementFilter: String, CaseIterable, Identifiable {
         case .proofRequired:
             return settlement.proofRequirement == .flexibleProof || settlement.proofRequirement == .strictProof
         case .deadlineSoon:
-            let daysRemaining = Calendar.current.dateComponents([.day], from: Date(), to: settlement.claimDeadline).day ?? Int.max
-            return daysRemaining <= 30
+            return settlement.daysRemaining <= 30
         }
     }
 }
@@ -125,30 +124,18 @@ private struct SettlementRow: View {
     let settlement: Settlement
     let isTracking: Bool
 
-    private var daysRemaining: Int {
-        Calendar.current.dateComponents([.day], from: Date(), to: settlement.claimDeadline).day ?? 0
-    }
-
     /// Icon + weight + color together, never color alone, matching the
     /// same pairing rule ClaimStatusBadge already enforces elsewhere in
     /// this app. A week is close enough to matter but not so wide that
     /// most rows end up flagged.
     private var isUrgent: Bool {
-        (0...7).contains(daysRemaining)
-    }
-
-    private var category: SettlementCategory {
-        SettlementCategory.classify(
-            title: settlement.title,
-            brand: settlement.brand,
-            description: settlement.settlementDescription
-        )
+        (0...7).contains(settlement.daysRemaining)
     }
 
     var body: some View {
         Card {
             HStack(alignment: .top, spacing: 12) {
-                CategoryIconBadge(category: category)
+                CategoryIconBadge(category: settlement.category)
 
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .firstTextBaseline) {
@@ -186,7 +173,7 @@ private struct SettlementRow: View {
                         Image(systemName: isUrgent ? "exclamationmark.triangle.fill" : "calendar")
                         Text(settlement.claimDeadline.formatted(date: .abbreviated, time: .omitted))
                         Text("·")
-                        Text(daysRemaining > 0 ? "\(daysRemaining) days left" : "closing soon")
+                        Text(settlement.daysRemaining > 0 ? "\(settlement.daysRemaining) days left" : "closing soon")
                     }
                     .font(.caption.weight(isUrgent ? .semibold : .regular))
                     .foregroundStyle(isUrgent ? .orange : .secondary)

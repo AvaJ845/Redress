@@ -57,6 +57,18 @@ final class Settlement {
         sourceURLString.flatMap(URL.init(string:))
     }
 
+    /// Shared by every row/list that shows a deadline countdown — was
+    /// independently reimplemented in three different views before this.
+    var daysRemaining: Int {
+        Calendar.current.dateComponents([.day], from: Date(), to: claimDeadline).day ?? 0
+    }
+
+    /// Cosmetic-only classification for the row icon badge — see
+    /// SettlementCategory. Shared so every row uses the same signal.
+    var category: SettlementCategory {
+        SettlementCategory.classify(title: title, brand: brand, description: settlementDescription)
+    }
+
     init(
         id: String,
         title: String,

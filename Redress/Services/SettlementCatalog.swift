@@ -16,10 +16,15 @@ private struct SeedSettlementDTO: Codable {
     let sourceName: String
     let sourceURLString: String?
     let sourceDate: String?
-    /// Optional (not required in the JSON) and defaults to true when
-    /// absent — matches Settlement's own default, so existing seed
-    /// entries never need editing just because this field was added.
-    let isFullyVerified: Bool?
+    /// Deliberately required, not optional-defaulting-to-true. This field
+    /// is the entire enforcement mechanism for the two-tier trust model
+    /// (see Settlement.isFullyVerified) — a defaulting fallback here would
+    /// mean a seed edit that simply forgets to carry the key over (e.g.
+    /// someone hand-correcting just a deadline on an unverified record)
+    /// silently promotes it to "fully verified" and unlocks a Start Claim
+    /// button for a settlement no one ever actually verified. Every row
+    /// in SeedSettlements.json must state this explicitly.
+    let isFullyVerified: Bool
 }
 
 private struct SeedFile: Codable {
@@ -61,7 +66,15 @@ enum SettlementCatalog {
         var newlyInserted: [Settlement] = []
 
         for dto in seedFile.settlements {
-            let deadline = formatter.date(from: dto.claimDeadline) ?? Date()
+            // A malformed deadline must never silently become "today" —
+            // that would make a garbled record show as closing today,
+            // surface in the deadline-soon banner, and potentially fire a
+            // same-day reminder. Skip the record instead; it simply won't
+            // update until the JSON is fixed.
+            guard let deadline = formatter.date(from: dto.claimDeadline) else {
+                assertionFailure("SeedSettlements.json has an unparseable claimDeadline for id \(dto.id)")
+                continue
+            }
             let sourceDate = dto.sourceDate.flatMap { formatter.date(from: $0) }
             let proofRequirement = ProofRequirement(rawValue: dto.proofRequirement) ?? .none
 
@@ -81,7 +94,7 @@ enum SettlementCatalog {
                 record.sourceDate = sourceDate
                 record.isSampleData = dto.isSampleData
                 record.payoutText = dto.payoutText
-                record.isFullyVerified = dto.isFullyVerified ?? true
+                record.isFullyVerified = dto.isFullyVerified
 
                 if deadline != previousDeadline {
                     rescheduleRemindersForClaims(against: record, context: context, reschedule: rescheduleReminder)
@@ -102,7 +115,7 @@ enum SettlementCatalog {
                     sourceName: dto.sourceName,
                     sourceURLString: dto.sourceURLString,
                     sourceDate: sourceDate,
-                    isFullyVerified: dto.isFullyVerified ?? true
+                    isFullyVerified: dto.isFullyVerified
                 )
                 context.insert(settlement)
                 existingByID[dto.id] = settlement

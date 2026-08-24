@@ -16,15 +16,23 @@ enum NotificationManager {
         guard let triggerDate = Calendar.current.date(byAdding: .day, value: -3, to: settlement.claimDeadline),
               triggerDate > Date() else { return }
 
+        // getNotificationSettings' completion runs on an arbitrary queue,
+        // not necessarily the model's owning actor — extract the plain
+        // values the closure needs *before* handing off, so the closure
+        // never touches the SwiftData model itself off-actor.
+        let claimID = claim.id
+        let title = settlement.title
+        let deadline = settlement.claimDeadline
+
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { settings in
             switch settings.authorizationStatus {
             case .authorized, .provisional:
-                schedule(for: claim, settlement: settlement, triggerDate: triggerDate)
+                schedule(claimID: claimID, title: title, deadline: deadline, triggerDate: triggerDate)
             case .notDetermined:
                 center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
                     guard granted else { return }
-                    schedule(for: claim, settlement: settlement, triggerDate: triggerDate)
+                    schedule(claimID: claimID, title: title, deadline: deadline, triggerDate: triggerDate)
                 }
             case .denied, .ephemeral:
                 break
@@ -34,16 +42,16 @@ enum NotificationManager {
         }
     }
 
-    private static func schedule(for claim: Claim, settlement: Settlement, triggerDate: Date) {
+    private static func schedule(claimID: UUID, title: String, deadline: Date, triggerDate: Date) {
         let content = UNMutableNotificationContent()
         content.title = "Claim deadline approaching"
-        content.body = "\(settlement.title) closes soon — file before \(settlement.claimDeadline.formatted(date: .abbreviated, time: .omitted))."
+        content.body = "\(title) closes soon — file before \(deadline.formatted(date: .abbreviated, time: .omitted))."
         content.sound = .default
 
         let components = Calendar.current.dateComponents([.year, .month, .day, .hour], from: triggerDate)
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         let request = UNNotificationRequest(
-            identifier: "deadline-\(claim.id.uuidString)",
+            identifier: "deadline-\(claimID.uuidString)",
             content: content,
             trigger: trigger
         )
@@ -63,15 +71,20 @@ enum NotificationManager {
     static func notifyNewSettlements(_ settlements: [Settlement]) {
         guard !settlements.isEmpty else { return }
 
+        // Extract plain titles before the async hand-off — see
+        // scheduleDeadlineReminder for why the model objects themselves
+        // must never be touched from getNotificationSettings' closure.
+        let titles = settlements.map(\.title)
+
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { settings in
             switch settings.authorizationStatus {
             case .authorized, .provisional:
-                scheduleNewSettlementsNotification(settlements)
+                scheduleNewSettlementsNotification(titles: titles)
             case .notDetermined:
                 center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
                     guard granted else { return }
-                    scheduleNewSettlementsNotification(settlements)
+                    scheduleNewSettlementsNotification(titles: titles)
                 }
             case .denied, .ephemeral:
                 break
@@ -81,13 +94,13 @@ enum NotificationManager {
         }
     }
 
-    private static func scheduleNewSettlementsNotification(_ settlements: [Settlement]) {
+    private static func scheduleNewSettlementsNotification(titles: [String]) {
         let content = UNMutableNotificationContent()
-        if settlements.count == 1, let only = settlements.first {
+        if titles.count == 1, let only = titles.first {
             content.title = "New settlement found"
-            content.body = "\(only.title) is now open — check if you qualify."
+            content.body = "\(only) is now open — check if you qualify."
         } else {
-            content.title = "\(settlements.count) new settlements found"
+            content.title = "\(titles.count) new settlements found"
             content.body = "Redress found new open settlements — check if you qualify."
         }
         content.sound = .default

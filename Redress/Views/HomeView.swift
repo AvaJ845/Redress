@@ -29,9 +29,7 @@ struct HomeView: View {
     /// That tier still lives in Discover, one tap away.
     private var deadlineSoonSettlements: [Settlement] {
         settlements.filter { settlement in
-            guard settlement.isFullyVerified else { return false }
-            let days = Calendar.current.dateComponents([.day], from: Date(), to: settlement.claimDeadline).day ?? Int.max
-            return (0...14).contains(days)
+            settlement.isFullyVerified && (0...14).contains(settlement.daysRemaining)
         }
     }
 
@@ -91,6 +89,7 @@ struct HomeView: View {
                                     } label: {
                                         HomeSettlementRow(settlement: settlement, isTracking: false)
                                     }
+                                    .buttonStyle(.plain)
                                 }
                             }
                         }
@@ -101,7 +100,7 @@ struct HomeView: View {
             .background(Theme.pageBackground)
             .navigationTitle("Home")
             .navigationBarTitleDisplayMode(.large)
-            .profileToolbarButton()
+            .settingsToolbarButton()
             .onAppear {
                 SettlementCatalog.loadSeedIfNeeded(into: context)
                 WatchlistCatalog.loadIfNeeded(into: context)
@@ -152,22 +151,10 @@ private struct HomeSettlementRow: View {
     let settlement: Settlement
     let isTracking: Bool
 
-    private var daysRemaining: Int {
-        Calendar.current.dateComponents([.day], from: Date(), to: settlement.claimDeadline).day ?? 0
-    }
-
-    private var category: SettlementCategory {
-        SettlementCategory.classify(
-            title: settlement.title,
-            brand: settlement.brand,
-            description: settlement.settlementDescription
-        )
-    }
-
     var body: some View {
         Card {
             HStack(alignment: .top, spacing: 12) {
-                CategoryIconBadge(category: category, size: 36)
+                CategoryIconBadge(category: settlement.category, size: 36)
 
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .firstTextBaseline) {
@@ -189,7 +176,7 @@ private struct HomeSettlementRow: View {
                         Image(systemName: "calendar")
                         Text(settlement.claimDeadline.formatted(date: .abbreviated, time: .omitted))
                         Text("·")
-                        Text(daysRemaining > 0 ? "\(daysRemaining) days left" : "closing soon")
+                        Text(settlement.daysRemaining > 0 ? "\(settlement.daysRemaining) days left" : "closing soon")
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)

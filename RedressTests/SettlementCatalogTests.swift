@@ -30,7 +30,8 @@ final class SettlementCatalogTests: XCTestCase {
         "eligibilityCriteria":"criteria","proofRequirement":"none",
         "administratorName":"Admin","administratorPortalURLString":"https://example.com",
         "claimDeadline":"\(deadline)","isSampleData":false,"payoutText":"",
-        "sourceName":"Test Source","sourceURLString":null,"sourceDate":null}
+        "sourceName":"Test Source","sourceURLString":null,"sourceDate":null,
+        "isFullyVerified":true}
         """
     }
 
@@ -41,7 +42,8 @@ final class SettlementCatalogTests: XCTestCase {
         "administratorName":"Admin","administratorPortalURLString":"https://example.com",
         "claimDeadline":"2026-12-01T00:00:00Z","isSampleData":false,
         "payoutText":"$50, no proof needed",
-        "sourceName":"Test Source","sourceURLString":null,"sourceDate":null}
+        "sourceName":"Test Source","sourceURLString":null,"sourceDate":null,
+        "isFullyVerified":true}
         """
         let url = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(json)]}"#)
         SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: url)
@@ -50,15 +52,55 @@ final class SettlementCatalogTests: XCTestCase {
         XCTAssertEqual(result?.payoutText, "$50, no proof needed")
     }
 
-    func testIsFullyVerifiedDefaultsToTrueWhenAbsentFromSeedJSON() throws {
-        // seedRecord()'s fixture doesn't include isFullyVerified at all —
-        // every settlement seeded before this field existed must still
-        // come through fully verified, not silently downgraded.
-        let url = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(seedRecord(id: "a", title: "First"))]}"#)
+    func testMissingIsFullyVerifiedFailsTheWholeLoadRatherThanDefaulting() throws {
+        // isFullyVerified is the entire enforcement mechanism for the
+        // two-tier trust model — a record that omits it must never
+        // silently come through as verified (or as anything at all).
+        // JSONDecoder fails the whole array on one bad element, so the
+        // load is a clean no-op rather than partially applying.
+        let json = """
+        {"id":"a","title":"First","brand":"Test Brand","description":"desc",
+        "eligibilityCriteria":"criteria","proofRequirement":"none",
+        "administratorName":"Admin","administratorPortalURLString":"https://example.com",
+        "claimDeadline":"2026-12-01T00:00:00Z","isSampleData":false,"payoutText":"",
+        "sourceName":"Test Source","sourceURLString":null,"sourceDate":null}
+        """
+        let url = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(json)]}"#)
         SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: url)
 
+        let results = try context.fetch(FetchDescriptor<Settlement>())
+        XCTAssertTrue(results.isEmpty, "a seed file missing isFullyVerified on any record must not insert anything")
+    }
+
+    func testUpdatingAnUnverifiedSettlementCannotSilentlyBecomeVerified() throws {
+        // The exact regression this test guards against: a human hand-
+        // corrects one field (e.g. a deadline) on an already-unverified
+        // record and the JSON edit still carries isFullyVerified:false —
+        // the record must stay unverified, never flip to true implicitly.
+        let v1 = """
+        {"id":"a","title":"First","brand":"Test Brand","description":"desc",
+        "eligibilityCriteria":"Not yet published on the administrator's public case page.",
+        "proofRequirement":"none","administratorName":"Admin","administratorPortalURLString":"",
+        "claimDeadline":"2026-12-01T00:00:00Z","isSampleData":false,"payoutText":"",
+        "sourceName":"Test Source","sourceURLString":null,"sourceDate":null,
+        "isFullyVerified":false}
+        """
+        let url1 = writeSeedFile(#"{"seedVersion":1,"settlements":[\#(v1)]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: url1)
+
+        let v2 = """
+        {"id":"a","title":"First","brand":"Test Brand","description":"desc",
+        "eligibilityCriteria":"Not yet published on the administrator's public case page.",
+        "proofRequirement":"none","administratorName":"Admin","administratorPortalURLString":"",
+        "claimDeadline":"2027-01-15T00:00:00Z","isSampleData":false,"payoutText":"",
+        "sourceName":"Test Source","sourceURLString":null,"sourceDate":null,
+        "isFullyVerified":false}
+        """
+        let url2 = writeSeedFile(#"{"seedVersion":2,"settlements":[\#(v2)]}"#)
+        SettlementCatalog.loadSeedIfNeeded(into: context, seedFileURL: url2)
+
         let result = try context.fetch(FetchDescriptor<Settlement>()).first
-        XCTAssertEqual(result?.isFullyVerified, true)
+        XCTAssertEqual(result?.isFullyVerified, false)
     }
 
     func testIsFullyVerifiedFalseRoundTripsThroughSeeding() throws {
@@ -239,6 +281,37 @@ final class SettlementCatalogTests: XCTestCase {
 
         XCTAssertEqual(notifiedSettlements?.count, 1, "only the genuinely new settlement should be notified about")
         XCTAssertEqual(notifiedSettlements?.first?.id, "b")
+    }
+
+    /// Guards the real, shipped SeedSettlements.json — not a synthetic
+    /// fixture — against the exact mistake the trust model depends on
+    /// never happening: an "unverified" record accidentally carrying a
+    /// fabricated payout, portal link, or eligibility fact. Runs against
+    /// Bundle.main (the host app's real bundle, via TEST_HOST) rather
+    /// than an injected seedFileURL, so it fails if a future hand-edit to
+    /// the actual seed file introduces this, not just a test fixture.
+    func testRealSeedFileNeverFabricatesDetailsOnUnverifiedSettlements() throws {
+        SettlementCatalog.loadSeedIfNeeded(into: context)
+
+        let results = try context.fetch(FetchDescriptor<Settlement>())
+        let unverified = results.filter { !$0.isFullyVerified }
+        XCTAssertFalse(unverified.isEmpty, "expected at least one pending-review settlement in the real seed file")
+
+        for settlement in unverified {
+            XCTAssertTrue(
+                settlement.payoutText.isEmpty,
+                "\(settlement.id) is unverified but has a payoutText — that implies a verified fact no one confirmed"
+            )
+            XCTAssertTrue(
+                settlement.administratorPortalURLString.isEmpty,
+                "\(settlement.id) is unverified but has a portal URL — that would let a user attempt a claim on unverified data"
+            )
+            XCTAssertEqual(
+                settlement.eligibilityCriteria,
+                "Not yet published on the administrator's public case page.",
+                "\(settlement.id) is unverified but eligibilityCriteria reads like a confirmed fact, not the honest placeholder"
+            )
+        }
     }
 
     func testSubsequentLoadWithNoNewSettlementsDoesNotNotify() throws {

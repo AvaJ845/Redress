@@ -90,7 +90,7 @@ struct SettlementDetailView: View {
             .padding()
         }
         .background(Theme.pageBackground)
-        .navigationTitle("Settlement")
+        .navigationTitle(settlement.title)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingPaywall) {
             PaywallView(reason: "You're already tracking a claim on the free plan. Upgrade to track this one too.")
@@ -153,6 +153,9 @@ private struct PayoutCallout: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
+        // Deliberately not Card: this is a gold-tinted highlight, not a
+        // neutral grouped surface, and a smaller radius than Card's 20pt
+        // reads correctly as a secondary element nested inside one.
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Theme.gold.opacity(0.15))

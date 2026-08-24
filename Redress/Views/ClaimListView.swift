@@ -48,7 +48,7 @@ struct ClaimListView: View {
             .scrollContentBackground(.hidden)
             .background(Theme.pageBackground)
             .navigationTitle("Claims")
-            .profileToolbarButton()
+            .settingsToolbarButton()
             .overlay {
                 if claims.isEmpty {
                     ContentUnavailableView(

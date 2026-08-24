@@ -20,14 +20,18 @@ struct WatchlistListView: View {
                     WatchlistDetailView(watchlistCase: watchlistCase)
                 } label: {
                     Card {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(watchlistCase.caseName).font(.headline)
-                            Text(watchlistCase.company)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            Text("Filed \(watchlistCase.dateFiled.formatted(date: .abbreviated, time: .omitted))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        HStack(alignment: .top, spacing: 12) {
+                            CategoryIconBadge(category: watchlistCase.category)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(watchlistCase.caseName).font(.headline)
+                                Text(watchlistCase.company)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                Text("Filed \(watchlistCase.dateFiled.formatted(date: .abbreviated, time: .omitted))")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }

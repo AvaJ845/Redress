@@ -26,7 +26,7 @@ struct DiscoverView: View {
                 }
             }
             .navigationTitle("Discover")
-            .profileToolbarButton()
+            .settingsToolbarButton()
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Picker("Section", selection: $segment) {

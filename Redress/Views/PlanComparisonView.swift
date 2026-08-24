@@ -34,15 +34,13 @@ struct PlanComparisonView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        Group {
+        Card {
             if dynamicTypeSize.isAccessibilitySize {
                 AccessibilityComparisonList()
             } else {
                 CompactComparisonTable()
             }
         }
-        .padding()
-        .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
     }
 }
 

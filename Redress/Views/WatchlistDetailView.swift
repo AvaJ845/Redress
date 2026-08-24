@@ -53,7 +53,7 @@ struct WatchlistDetailView: View {
             .padding()
         }
         .background(Theme.pageBackground)
-        .navigationTitle("Watching")
+        .navigationTitle(watchlistCase.caseName)
         .navigationBarTitleDisplayMode(.inline)
     }
 

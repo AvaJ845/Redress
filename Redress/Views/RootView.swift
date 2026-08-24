@@ -10,7 +10,7 @@ enum RootSection: String, CaseIterable, Identifiable {
         case .home: return "Home"
         case .claims: return "Claims"
         case .discover: return "Discover"
-        case .account: return "Profile"
+        case .account: return "Settings"
         }
     }
 
@@ -43,10 +43,10 @@ struct RootView: View {
 }
 
 /// iPhone / compact width — a bottom tab bar with just the three things
-/// that are actually the product. Profile/Settings lives behind a
-/// toolbar icon on each tab instead of taking a fourth slot: it isn't
-/// "the product," so it shouldn't get equal billing with Home, Claims,
-/// and Discover in the one piece of chrome that's always on screen.
+/// that are actually the product. Settings lives behind a toolbar icon
+/// on each tab instead of taking a fourth slot: it isn't "the product,"
+/// so it shouldn't get equal billing with Home, Claims, and Discover in
+/// the one piece of chrome that's always on screen.
 private struct RootTabView: View {
     var body: some View {
         TabView {
@@ -61,10 +61,10 @@ private struct RootTabView: View {
 }
 
 /// iPad / regular width — a sidebar, per HIG guidance that a bottom tab
-/// bar is an iPhone pattern, not an iPad one. Profile keeps its own
+/// bar is an iPhone pattern, not an iPad one. Settings keeps its own
 /// sidebar row here since a sidebar isn't as space-constrained as a
 /// four-icon tab bar — the "stay out of the way" pressure that pushed
-/// Profile into a toolbar button on iPhone doesn't apply the same way.
+/// Settings into a toolbar button on iPhone doesn't apply the same way.
 private struct RootSplitView: View {
     @State private var selection: RootSection? = .home
 

@@ -28,6 +28,13 @@ final class WatchlistCase {
         sourceURLString.flatMap(URL.init(string:))
     }
 
+    /// Same cosmetic row-icon classification Settlement uses, so the
+    /// Settlements and Watching segments of Discover read as the same
+    /// kind of browsing, not two differently-designed lists.
+    var category: SettlementCategory {
+        SettlementCategory.classify(title: caseName, brand: company, description: summary)
+    }
+
     init(
         id: String,
         caseName: String,
