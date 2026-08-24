@@ -124,6 +124,14 @@ def merge_leads(existing_records: List[dict], new_records: List[dict], now_iso: 
     by_key: Dict[str, dict] = {}
     for record in existing_records:
         key = _normalize_key(record.get("case_name", ""), record.get("docket_number") or "")
+        # A record from before these fields existed (or written by some
+        # other path) must still end up with both — otherwise it stays
+        # permanently missing them unless a source happens to re-find the
+        # exact same case again, which isn't guaranteed.
+        if "first_seen_at" not in record or "last_seen_at" not in record:
+            record = dict(record)
+            record.setdefault("first_seen_at", now_iso)
+            record.setdefault("last_seen_at", now_iso)
         by_key[key] = record
 
     for record in new_records:

@@ -109,6 +109,19 @@ class MergeLeadsTests(unittest.TestCase):
         self.assertEqual(merged[0]["first_seen_at"], "2026-08-23T00:00:00+00:00")
         self.assertEqual(merged[0]["last_seen_at"], "2026-08-23T00:00:00+00:00")
 
+    def test_existing_record_missing_timestamps_is_backfilled_not_left_blank(self):
+        # Regression test: a record written before first_seen_at/
+        # last_seen_at existed (or by any other path) must not stay
+        # permanently missing them just because no source happens to
+        # re-find that exact case again this run — confirmed live in
+        # leads.json, where exactly this happened to one Verita record.
+        existing = [{"case_name": "Smith v. Acme Corp", "docket_number": "1:26-cv-00001",
+                     "status": "lead-needs-review"}]
+        merged = merge_leads(existing, new_records=[], now_iso="2026-08-23T00:00:00+00:00")
+
+        self.assertEqual(merged[0]["first_seen_at"], "2026-08-23T00:00:00+00:00")
+        self.assertEqual(merged[0]["last_seen_at"], "2026-08-23T00:00:00+00:00")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -160,7 +160,13 @@ class VeritaSource(SettlementSource):
 
             state[url] = {"checked_at": now_iso, "deadline": match.group(1)}
 
-            if deadline <= today:
+            # Compare calendar dates, not instants — `deadline` is midnight
+            # UTC on the parsed date, while `today` carries the current
+            # time-of-day. Comparing them directly treated a settlement
+            # whose deadline is literally today as already closed for
+            # nearly the whole day, silently dropping it before it ever
+            # reached leads.json for human review.
+            if deadline.date() < today.date():
                 continue  # already closed, not a candidate
 
             slug = url.rstrip("/").rsplit("/", 1)[-1]

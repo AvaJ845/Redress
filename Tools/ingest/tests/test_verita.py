@@ -3,8 +3,10 @@ import os
 import shutil
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from unittest.mock import patch
 
+from ..sources import verita
 from ..sources.verita import VeritaSource
 
 SITEMAP_INDEX = """<?xml version="1.0" encoding="UTF-8"?>
@@ -51,8 +53,8 @@ class VeritaSourceTests(unittest.TestCase):
 
     def test_finds_and_returns_only_open_cases(self):
         source = VeritaSource(state_path=self.state_path)
-        with patch("Tools.ingest.sources.verita._fetch", side_effect=fake_fetch), \
-             patch("Tools.ingest.sources.verita.time.sleep"):
+        with patch.object(verita, "_fetch", side_effect=fake_fetch), \
+             patch("time.sleep"):
             candidates = source.fetch(query="", max_results=10)
 
         self.assertEqual(len(candidates), 1, "closed case and no-deadline page must both be excluded")
@@ -60,8 +62,8 @@ class VeritaSourceTests(unittest.TestCase):
 
     def test_open_case_is_tagged_ground_truth(self):
         source = VeritaSource(state_path=self.state_path)
-        with patch("Tools.ingest.sources.verita._fetch", side_effect=fake_fetch), \
-             patch("Tools.ingest.sources.verita.time.sleep"):
+        with patch.object(verita, "_fetch", side_effect=fake_fetch), \
+             patch("time.sleep"):
             candidates = source.fetch(query="", max_results=10)
 
         self.assertEqual(candidates[0].confidence, "ground_truth")
@@ -69,8 +71,8 @@ class VeritaSourceTests(unittest.TestCase):
 
     def test_closed_case_is_genuinely_excluded_not_just_deprioritized(self):
         source = VeritaSource(state_path=self.state_path)
-        with patch("Tools.ingest.sources.verita._fetch", side_effect=fake_fetch), \
-             patch("Tools.ingest.sources.verita.time.sleep"):
+        with patch.object(verita, "_fetch", side_effect=fake_fetch), \
+             patch("time.sleep"):
             candidates = source.fetch(query="", max_results=10)
 
         ids = [c.source_id for c in candidates]
@@ -85,7 +87,7 @@ class VeritaSourceTests(unittest.TestCase):
             raise AssertionError("should not fetch further if no settlement sitemap found")
 
         source = VeritaSource(state_path=self.state_path)
-        with patch("Tools.ingest.sources.verita._fetch", side_effect=fetch_without_settlement_sitemap):
+        with patch.object(verita, "_fetch", side_effect=fetch_without_settlement_sitemap):
             candidates = source.fetch(query="", max_results=10)
         self.assertEqual(candidates, [])
 
@@ -107,8 +109,8 @@ class VeritaSourceTests(unittest.TestCase):
             return fake_fetch(url)
 
         source = VeritaSource(state_path=self.state_path)
-        with patch("Tools.ingest.sources.verita._fetch", side_effect=counting_fetch), \
-             patch("Tools.ingest.sources.verita.time.sleep"):
+        with patch.object(verita, "_fetch", side_effect=counting_fetch), \
+             patch("time.sleep"):
             candidates = source.fetch(query="", max_results=1)
 
         page_fetches = [u for u in fetch_log if "/settlement-case/" in u]
@@ -125,8 +127,8 @@ class VeritaSourceTests(unittest.TestCase):
 
     def test_state_file_persists_between_source_instances(self):
         source = VeritaSource(state_path=self.state_path)
-        with patch("Tools.ingest.sources.verita._fetch", side_effect=fake_fetch), \
-             patch("Tools.ingest.sources.verita.time.sleep"):
+        with patch.object(verita, "_fetch", side_effect=fake_fetch), \
+             patch("time.sleep"):
             source.fetch(query="", max_results=10)
 
         with open(self.state_path) as f:
@@ -172,18 +174,48 @@ class VeritaSourceTests(unittest.TestCase):
             return titled_page
 
         source = VeritaSource(state_path=self.state_path)
-        with patch("Tools.ingest.sources.verita._fetch", side_effect=fetch_with_title), \
-             patch("Tools.ingest.sources.verita.time.sleep"):
+        with patch.object(verita, "_fetch", side_effect=fetch_with_title), \
+             patch("time.sleep"):
             candidates = source.fetch(query="", max_results=10)
 
         self.assertEqual(candidates[0].case_name, "Toyota IC Forklift Class Action Settlement")
+
+    def test_a_deadline_of_today_is_not_treated_as_already_closed(self):
+        # Regression test: comparing a midnight-UTC deadline directly
+        # against datetime.now() (which carries the current time-of-day)
+        # meant a settlement whose deadline is literally today was
+        # discarded as "already closed" for nearly the whole day — real
+        # settlements were silently dropped before ever reaching
+        # leads.json for human review. Must compare calendar dates.
+        today_str = datetime.now(timezone.utc).strftime("%d %b %Y")
+        sitemap = """<?xml version="1.0" encoding="UTF-8"?>
+        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+          <url><loc>https://veritaglobal.com/settlement-case/due-today-settlement/</loc></url>
+        </urlset>
+        """
+        page = f"<html><body><p>Claim deadline: {today_str}</p></body></html>"
+
+        def fetch_due_today(url):
+            if "sitemap_index" in url:
+                return SITEMAP_INDEX
+            if "mt_settlement_case-sitemap" in url:
+                return sitemap
+            return page
+
+        source = VeritaSource(state_path=self.state_path)
+        with patch.object(verita, "_fetch", side_effect=fetch_due_today), \
+             patch("time.sleep"):
+            candidates = source.fetch(query="", max_results=10)
+
+        self.assertEqual(len(candidates), 1, "a deadline of today must still count as open, not already closed")
+        self.assertEqual(candidates[0].source_id, "due-today-settlement")
 
     def test_case_name_falls_back_to_slug_when_title_tag_missing(self):
         # Existing fixture pages have no <title> tag at all — confirms the
         # fallback still works rather than dropping the candidate.
         source = VeritaSource(state_path=self.state_path)
-        with patch("Tools.ingest.sources.verita._fetch", side_effect=fake_fetch), \
-             patch("Tools.ingest.sources.verita.time.sleep"):
+        with patch.object(verita, "_fetch", side_effect=fake_fetch), \
+             patch("time.sleep"):
             candidates = source.fetch(query="", max_results=10)
 
         self.assertEqual(candidates[0].case_name, "Open Case Settlement")

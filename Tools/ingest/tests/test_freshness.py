@@ -6,6 +6,7 @@ import urllib.error
 import urllib.request
 from unittest.mock import MagicMock, patch
 
+from .. import freshness
 from ..freshness import check_seed_file, check_url_freshness
 
 
@@ -105,7 +106,7 @@ class CheckSeedFileTests(unittest.TestCase):
             json.dump(seed_data, f)
             path = f.name
 
-        with patch("Tools.ingest.freshness.check_url_freshness") as mock_check:
+        with patch.object(freshness, "check_url_freshness") as mock_check:
             from ..freshness import FreshnessResult
             mock_check.return_value = FreshnessResult(
                 url="https://example.com/sample-claim-portal",
@@ -140,7 +141,7 @@ class CheckSeedFileTests(unittest.TestCase):
             json.dump(seed_file, f)
             path = f.name
 
-        with patch("Tools.ingest.freshness.check_url_freshness") as mock_check:
+        with patch.object(freshness, "check_url_freshness") as mock_check:
             from ..freshness import FreshnessResult
             mock_check.return_value = FreshnessResult(
                 url="https://example.gov/claim", checked_at="2026-08-21T00:00:00Z",
