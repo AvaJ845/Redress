@@ -35,6 +35,22 @@ struct SettingsView: View {
                     }
                 }
 
+                if SubscriptionManager.isRunningInTestFlight {
+                    Section {
+                        Toggle(
+                            "Force Redress Plus",
+                            isOn: Binding(
+                                get: { subscriptions.debugForcePlusEnabled },
+                                set: { subscriptions.debugForcePlusEnabled = $0 }
+                            )
+                        )
+                    } header: {
+                        Text("TestFlight Testing")
+                    } footer: {
+                        Text("Only visible in TestFlight builds — never appears in the App Store release. Lets testers exercise Redress Plus features without a real purchase.")
+                    }
+                }
+
                 if subscriptions.isPlus {
                     Section("Value guarantee") {
                         Text("You've recovered \(totalRecovered, format: .currency(code: "USD")) so far via claims marked paid.")
